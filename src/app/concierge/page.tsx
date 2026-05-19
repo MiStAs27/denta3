@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Send, Bot, User, Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -70,8 +71,14 @@ export default function ConciergePage() {
       <Card className="flex-1 flex flex-col border-none shadow-xl overflow-hidden">
         <CardHeader className="bg-primary text-white border-b-0 pb-8 pt-6">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-md">
-              <Bot size={24} />
+            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-inner">
+              <Image 
+                src="/mi-logo.png" 
+                alt="Logo Clínica" 
+                width={40} 
+                height={40} 
+                className="object-contain"
+              />
             </div>
             <div>
               <CardTitle className="text-white">Conserje DentaSync</CardTitle>

@@ -1,47 +1,75 @@
+"use client"
+
+import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Stethoscope, BrainCircuit, UserCheck, ShieldCheck, ChevronRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Stethoscope, ChevronRight, Sparkles, ShieldCheck, Zap } from 'lucide-react'
 
-export default function Home() {
+export default function PaginaInicial() {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-      <div className="mb-12">
-        <div className="bg-primary p-4 rounded-3xl text-white inline-block shadow-2xl shadow-primary/30 mb-6">
-          <Stethoscope size={48} />
-        </div>
-        <h1 className="text-5xl font-headline font-black text-foreground tracking-tight sm:text-7xl">
-          Denta<span className="text-primary">Sync</span>
-        </h1>
-        <p className="text-muted-foreground mt-4 text-lg max-w-xl mx-auto">
-          La plataforma de gestión dental todo en uno impulsada por IA. Registros digitales, programación inteligente y atención automatizada al paciente.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full mb-12">
-        {[
-          { title: 'Odontograma Interactivo', desc: 'Seguimiento de procedimientos dentales en tiempo real', icon: Stethoscope },
-          { title: 'Optimizador de Espacios', desc: 'Eficiencia de agenda impulsada por IA', icon: BrainCircuit },
-          { title: 'Conserje IA', desc: 'Soporte de reserva para pacientes 24/7', icon: UserCheck },
-          { title: 'Registros Seguros en la Nube', desc: 'Historial de pacientes listo para GDPR', icon: ShieldCheck },
-        ].map((f, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl border border-muted shadow-sm hover:shadow-md transition-shadow">
-            <f.icon className="text-primary mb-4" size={28} />
-            <h3 className="font-bold text-foreground mb-1">{f.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+    <div className="min-h-screen bg-white">
+      {/* Navegación */}
+      <nav className="border-b px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="bg-primary p-2 rounded-lg text-white">
+            <Stethoscope size={24} />
           </div>
-        ))}
-      </div>
+          <span className="font-headline text-2xl font-bold tracking-tight text-primary">
+            DentaSync
+          </span>
+        </div>
+        <Link href="/dashboard">
+          <Button variant="ghost">Entrar al Portal</Button>
+        </Link>
+      </nav>
 
-      <Link href="/dashboard">
-        <Button size="lg" className="bg-primary text-white hover:bg-primary/90 h-16 px-10 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 gap-3 group">
-          Entrar al Portal Clínico
-          <ChevronRight className="group-hover:translate-x-1 transition-transform" />
-        </Button>
-      </Link>
-      
-      <p className="mt-8 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-        DentaSync SaaS v1.0 • Edición Armada Clínica
-      </p>
+      {/* Hero */}
+      <main className="max-w-6xl mx-auto px-6 pt-20 pb-32 text-center">
+        <div className="flex justify-center mb-6">
+          <Badge className="bg-secondary/10 text-secondary border-secondary/20 px-4 py-1.5 rounded-full text-sm font-semibold">
+            Plataforma Dental Impulsada por IA
+          </Badge>
+        </div>
+        
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-6">
+          Optimice su Clínica con <span className="text-primary">Inteligencia Real</span>
+        </h1>
+        
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+          La solución integral para la gestión de pacientes, agendas inteligentes y flujos de trabajo optimizados.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link href="/dashboard">
+            <Button size="lg" className="h-14 px-8 text-lg font-bold gap-2 bg-primary text-white hover:bg-primary/90">
+              Entrar al Sistema
+              <ChevronRight size={20} />
+            </Button>
+          </Link>
+          <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold">
+            Solicitar Demo
+          </Button>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 mt-24">
+          <div className="p-8 rounded-3xl bg-slate-50 text-left border border-slate-100">
+            <Zap className="text-primary mb-6" size={32} />
+            <h3 className="text-xl font-bold mb-3 text-slate-900">Agenda Inteligente</h3>
+            <p className="text-slate-600 leading-relaxed">Optimización automática de espacios vacíos.</p>
+          </div>
+          <div className="p-8 rounded-3xl bg-slate-50 text-left border border-slate-100">
+            <Sparkles className="text-secondary mb-6" size={32} />
+            <h3 className="text-xl font-bold mb-3 text-slate-900">Conserje IA</h3>
+            <p className="text-slate-600 leading-relaxed">Atención 24/7 para sus pacientes mediante IA.</p>
+          </div>
+          <div className="p-8 rounded-3xl bg-slate-50 text-left border border-slate-100">
+            <ShieldCheck className="text-blue-500 mb-6" size={32} />
+            <h3 className="text-xl font-bold mb-3 text-slate-900">Seguridad Clínica</h3>
+            <p className="text-slate-600 leading-relaxed">Fichas clínicas digitales y protegidas.</p>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
