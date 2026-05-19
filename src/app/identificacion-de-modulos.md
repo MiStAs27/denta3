@@ -35,7 +35,6 @@ Este documento mapea los módulos solicitados con la implementación real encont
 ## M05 - Gestión de Pacientes
 - Estado: Parcialmente implementado.
 - Observación: Hay un listado de pacientes y una ficha de paciente con datos clínicos demo.
-- Archivos relacionados:
  - Archivos relacionados:
   - `src/app/pacientes/page.tsx`
   - `src/app/pacientes/[id]/page.tsx`
@@ -85,10 +84,10 @@ Este documento mapea los módulos solicitados con la implementación real encont
 
 ## M09 - Chatbot Conversacional
 - Estado: Implementado.
-- Observación: Hay un chat IA funcionando con un flujo de conserje de citas y respuestas simuladas.
+- Observación: Hay un chat IA funcionando con un flujo de asistente de citas y respuestas simuladas.
 - Archivos relacionados:
   - `src/app/concierge/page.tsx`
-  - `src/ai/flows/patient-ai-appointment-concierge.ts`
+  - `src/ai/flows/patient-ai-appointment-concierge.ts` (Implementado como asistente-ia-de-pacientes.ts)
 - Funcionalidades presentes:
   - Interacción conversacional de paciente
   - Reserva, reprogramación y cancelación de cita simuladas
@@ -102,7 +101,7 @@ Este documento mapea los módulos solicitados con la implementación real encont
 - Estado: Implementado.
 - Observación: Existe un dashboard con KPIs y gráficos de ejemplo.
 - Archivos relacionados:
-  - `src/app/dashboard/page.tsx`
+  - `src/app/tablero/page.tsx`
 - Funcionalidades presentes:
   - KPIs de pacientes, citas y retención
   - Gráficos de flujo de pacientes y tratamientos top

@@ -18,7 +18,7 @@ interface Message {
 
 export default function ConciergePage() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: '¡Hola! Soy la IA de DentaSync, su conserje clínico personal. ¿En qué puedo ayudarle con sus citas hoy?' }
+    { role: 'ai', text: '¡Hola! Soy la IA de DentaSync, su asistente clínico personal. ¿En qué puedo ayudarle con sus citas hoy?' }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -60,7 +60,7 @@ export default function ConciergePage() {
     <div className="max-w-4xl mx-auto h-[calc(100vh-10rem)] flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">Conserje IA para Pacientes</h1>
+          <h1 className="text-3xl font-headline font-bold text-foreground">Tu Asistente virtual</h1>
           <p className="text-muted-foreground mt-1">Sistema automatizado de gestión de citas 24/7.</p>
         </div>
         <Badge className="bg-secondary/10 text-secondary hover:bg-secondary/20 border-secondary/20 px-3 py-1 gap-2">
@@ -81,7 +81,7 @@ export default function ConciergePage() {
               />
             </div>
             <div>
-              <CardTitle className="text-white">Conserje DentaSync</CardTitle>
+              <CardTitle className="text-white">Asistente DentaSync</CardTitle>
               <CardDescription className="text-white/60">Agente Automatizado de Soporte al Paciente</CardDescription>
             </div>
           </div>

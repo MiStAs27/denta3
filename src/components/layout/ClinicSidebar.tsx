@@ -25,13 +25,13 @@ import {
 } from '@/components/ui/sidebar'
 
 const NAV_ITEMS = [
-  { name: 'Vista General', href: '/tablero', icon: LayoutDashboard },
+  { name: 'Vista General', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Agenda', href: '/agenda', icon: Calendar },
   { name: 'Pacientes', href: '/pacientes', icon: Users },
-  { name: 'Optimizador IA', href: '/optimizador-ia', icon: BrainCircuit },
-  { name: 'Conserje IA', href: '/conserje', icon: MessageSquare },
-  { name: 'Analíticas', href: '/analiticas', icon: Activity },
-  { name: 'Configuración', href: '/ajustes', icon: Settings },
+  { name: 'Optimizador IA', href: '/ai-optimizer', icon: BrainCircuit },
+  { name: 'Asistente IA', href: '/concierge', icon: MessageSquare },
+  { name: 'Analíticas', href: '/analytics', icon: Activity },
+  { name: 'Configuración', href: '/settings', icon: Settings },
 ]
 
 export function ClinicSidebar() {

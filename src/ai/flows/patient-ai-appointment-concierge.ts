@@ -17,7 +17,7 @@ const PatientAIAppointmentConciergeInputSchema = z.object({
 export type PatientAIAppointmentConciergeInput = z.infer<typeof PatientAIAppointmentConciergeInputSchema>;
 
 const PatientAIAppointmentConciergeOutputSchema = z.object({
-  response: z.string().describe('La respuesta conversacional del conserje de IA al paciente.'),
+  response: z.string().describe('La respuesta conversacional del asistente de IA al paciente.'),
   actionTaken: z.enum(['none', 'booked', 'rescheduled', 'cancelled', 'info_needed']).describe('Indica el tipo de acción que tomó o pretende tomar la IA.'),
   details: z.object({
     appointmentId: z.string().optional().describe('El ID de la cita si se tomó una acción.'),
@@ -113,7 +113,7 @@ const patientAIAppointmentConciergePrompt = ai.definePrompt({
   input: { schema: PatientAIAppointmentConciergeInputSchema },
   output: { schema: PatientAIAppointmentConciergeOutputSchema },
   tools: [bookAppointmentTool, rescheduleAppointmentTool, cancelAppointmentTool],
-  prompt: `Eres DentaSync, un conserje de citas dentales impulsado por IA. Tu función es ayudar a los pacientes a gestionar sus citas.
+  prompt: `Eres DentaSync, un asistente de citas dentales impulsado por IA. Tu función es ayudar a los pacientes a gestionar sus citas.
 
 Sé siempre amable, empático y profesional. Entiende la solicitud del paciente para reservar, reprogramar o cancelar citas.
 

@@ -84,7 +84,7 @@ Este documento mapea los módulos solicitados con la implementación real encont
 
 ## M09 - Chatbot Conversacional
 - Estado: Implementado.
-- Observación: Hay un chat IA funcionando con un flujo de conserje de citas y respuestas simuladas.
+- Observación: Hay un chat IA funcionando con un flujo de asistente de citas y respuestas simuladas.
 - Archivos relacionados:
   - `src/app/concierge/page.tsx`
   - `src/ai/flows/patient-ai-appointment-concierge.ts`

@@ -60,7 +60,7 @@ export default function PaginaInicial() {
           </div>
           <div className="p-8 rounded-3xl bg-slate-50 text-left border border-slate-100">
             <Sparkles className="text-secondary mb-6" size={32} />
-            <h3 className="text-xl font-bold mb-3 text-slate-900">Conserje IA</h3>
+            <h3 className="text-xl font-bold mb-3 text-slate-900">Asistente IA</h3>
             <p className="text-slate-600 leading-relaxed">Atención 24/7 para sus pacientes mediante IA.</p>
           </div>
           <div className="p-8 rounded-3xl bg-slate-50 text-left border border-slate-100">

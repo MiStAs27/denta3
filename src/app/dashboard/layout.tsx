@@ -32,7 +32,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-3 ml-2 border-l pl-5">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold text-foreground">Dr. Ricardo Lopez</p>
-                <p className="text-xs text-muted-foreground">Lead Specialist</p>
+                <p className="text-xs text-muted-foreground">Especialista</p>
               </div>
               <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                 <User size={20} />
