@@ -22,23 +22,21 @@ export default function PaginaInicial() {
           <div className="flex items-center">
             <div className="bg-transparent text-white">
               <span className="font-headline text-3xl font-bold tracking-tight flex items-center gap-1">
-                denta<span className="text-[#d51375] font-light">sync</span>
+                Denta<span className="text-[#48B4D4] font-bold ">Sync</span>
               </span>
             </div>
           </div>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-bold text-white/90">
             <Link href="#" className="hover:text-white border-b-2 border-[#d51375] pb-1">Inicio</Link>
-            <Link href="#" className="hover:text-white transition-colors">Características</Link>
-            <Link href="#" className="hover:text-white transition-colors">Precios</Link>
             <Link href="#" className="hover:text-white transition-colors">Empresa</Link>
             <Link href="#" className="hover:text-white transition-colors">Contacto</Link>
           </div>
 
           <div className="flex items-center">
-            <Link href="/dashboard">
-              <Button className="bg-[#d51375] hover:bg-[#b00f60] text-white rounded-full px-6 py-5 text-sm md:text-base font-bold shadow-lg shadow-[#d51375]/20">
-                Entrar al Sistema
+            <Link href="/login">
+              <Button className="bg-[#0B7D99] hover:bg-[#0B7D99] text-white rounded-full px-6 py-5 text-sm md:text-base font-bold shadow-lg shadow-[#0B7D99]/20">
+                Iniciar Sesión
               </Button>
             </Link>
           </div>
@@ -49,13 +47,13 @@ export default function PaginaInicial() {
           {/* Left Text */}
           <div className="flex-1 text-left pt-10">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.15] tracking-tight mb-6 max-w-2xl">
-              Sistema Completo de Gestión Clínica y Pedidos Inteligentes
+              Sistema Completo de Gestión Clínica Inteligente
             </h1>
             <p className="text-lg md:text-xl text-blue-100/80 max-w-xl mb-10 leading-relaxed font-light">
               El único sistema dental impulsado por IA diseñado para la gestión integral de su clínica, agenda optimizada y operaciones de laboratorio.
             </p>
-            <Link href="/dashboard">
-              <Button className="bg-[#d51375] hover:bg-[#b00f60] text-white rounded-full px-8 py-6 text-lg font-bold shadow-lg shadow-[#d51375]/30">
+            <Link href="/login">
+              <Button className="bg-[#0B7D99] hover:bg-[#0B7D99] text-white rounded-full px-8 py-6 text-lg font-bold shadow-lg shadow-[#0B7D99]/30">
                 Leer Más
               </Button>
             </Link>
@@ -85,7 +83,6 @@ export default function PaginaInicial() {
               <Award className="text-slate-700" size={48} strokeWidth={1.5} />
               <h3 className="text-2xl font-extrabold text-slate-800">Sistema de Recompensas para Clínicas</h3>
             </div>
-            <div className="text-sm font-bold text-slate-800 mb-6">+ Add-On</div>
             <p className="text-slate-600 leading-relaxed mb-12 flex-1 text-base">
               Un sistema de recompensas flexible que permite a los proveedores diseñar niveles de descuento personalizados o un programa de reembolso para dentistas y clínicas. Rastrea automáticamente las ventas, asegurando que los clientes reciban los descuentos adecuados según su actividad.
             </p>
@@ -100,7 +97,6 @@ export default function PaginaInicial() {
               <Smile className="text-slate-700" size={48} strokeWidth={1.5} />
               <h3 className="text-2xl font-extrabold text-slate-800">Pedidos de Alineadores Transparentes</h3>
             </div>
-            <div className="text-sm font-bold text-slate-800 mb-6">+ Add-On</div>
             <p className="text-slate-600 leading-relaxed mb-12 flex-1 text-base">
               DentaSync agiliza el proceso de planificación del tratamiento entregando los planes directamente al panel del usuario. Esto permite a los dentistas revisar y aprobar planes de tratamiento de forma conveniente, rápida y eficiente, garantizando un flujo de trabajo más fluido y una mejor atención al paciente.
             </p>
