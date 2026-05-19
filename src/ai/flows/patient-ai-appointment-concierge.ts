@@ -1,45 +1,44 @@
 'use server';
 /**
- * @fileOverview An AI-powered conversational interface for patients to manage their dental appointments.
+ * @fileOverview Una interfaz conversacional impulsada por IA para que los pacientes gestionen sus citas dentales.
  *
- * - patientAIAppointmentConcierge - A function that handles patient requests for booking, rescheduling, or canceling appointments.
- * - PatientAIAppointmentConciergeInput - The input type for the patientAIAppointmentConcierge function.
- * - PatientAIAppointmentConciergeOutput - The return type for the patientAIAppointmentConcierge function.
+ * - patientAIAppointmentConcierge - Función que maneja las solicitudes de los pacientes para reservar, reprogramar o cancelar citas.
+ * - PatientAIAppointmentConciergeInput - El tipo de entrada para la función.
+ * - PatientAIAppointmentConciergeOutput - El tipo de salida para la función.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const PatientAIAppointmentConciergeInputSchema = z.object({
-  patientId: z.string().describe('The unique identifier for the patient making the request.'),
-  message: z.string().describe('The patient\'s message, containing their request to book, reschedule, or cancel an appointment.'),
+  patientId: z.string().describe('El identificador único del paciente que realiza la solicitud.'),
+  message: z.string().describe('El mensaje del paciente, que contiene su solicitud para reservar, reprogramar o cancelar una cita.'),
 });
 export type PatientAIAppointmentConciergeInput = z.infer<typeof PatientAIAppointmentConciergeInputSchema>;
 
 const PatientAIAppointmentConciergeOutputSchema = z.object({
-  response: z.string().describe('The AI concierge\'s conversational response to the patient.'),
-  actionTaken: z.enum(['none', 'booked', 'rescheduled', 'cancelled', 'info_needed']).describe('Indicates the type of action the AI took or intends to take.'),
+  response: z.string().describe('La respuesta conversacional del conserje de IA al paciente.'),
+  actionTaken: z.enum(['none', 'booked', 'rescheduled', 'cancelled', 'info_needed']).describe('Indica el tipo de acción que tomó o pretende tomar la IA.'),
   details: z.object({
-    appointmentId: z.string().optional().describe('The ID of the appointment if an action was taken.'),
-    confirmation: z.string().optional().describe('A confirmation message from the action.'),
-    missingInfo: z.array(z.string()).optional().describe('List of information still needed from the patient to complete an action.'),
-  }).optional().describe('Additional details about the action taken or information needed.'),
+    appointmentId: z.string().optional().describe('El ID de la cita si se tomó una acción.'),
+    confirmation: z.string().optional().describe('Un mensaje de confirmación de la acción.'),
+    missingInfo: z.array(z.string()).optional().describe('Lista de información que aún se necesita del paciente para completar una acción.'),
+  }).optional().describe('Detalles adicionales sobre la acción tomada o la información necesaria.'),
 });
 export type PatientAIAppointmentConciergeOutput = z.infer<typeof PatientAIAppointmentConciergeOutputSchema>;
 
 /**
- * Mock tool to simulate booking an appointment.
- * In a real application, this would interact with a database or appointment service.
+ * Herramienta mock para simular la reserva de una cita.
  */
 const bookAppointmentTool = ai.defineTool(
   {
     name: 'bookAppointment',
-    description: 'Books a new dental appointment for a patient.',
+    description: 'Reserva una nueva cita dental para un paciente.',
     inputSchema: z.object({
-      patientId: z.string().describe('The unique identifier of the patient.'),
-      date: z.string().describe('The desired date for the appointment (e.g., "YYYY-MM-DD").'),
-      time: z.string().describe('The desired time for the appointment (e.g., "HH:MM").'),
-      serviceType: z.string().describe('The type of dental service requested (e.g., "cleaning", "check-up", "filling").'),
+      patientId: z.string().describe('El identificador único del paciente.'),
+      date: z.string().describe('La fecha deseada para la cita (ej., "YYYY-MM-DD").'),
+      time: z.string().describe('La hora deseada para la cita (ej., "HH:MM").'),
+      serviceType: z.string().describe('El tipo de servicio dental solicitado (ej., "limpieza", "chequeo", "empaste").'),
     }),
     outputSchema: z.object({
       appointmentId: z.string(),
@@ -47,77 +46,64 @@ const bookAppointmentTool = ai.defineTool(
     }),
   },
   async ({ patientId, date, time, serviceType }) => {
-    // Simulate API call or database interaction
-    console.log(`Mock: Booking appointment for patient ${patientId} on ${date} at ${time} for ${serviceType}`);
+    console.log(`Mock: Reservando cita para el paciente ${patientId} el ${date} a las ${time} para ${serviceType}`);
     const appointmentId = `appt-${Math.random().toString(36).substring(2, 9)}`;
     return {
       appointmentId,
-      confirmationMessage: `Your ${serviceType} appointment is booked for ${date} at ${time}. Your appointment ID is ${appointmentId}.`,
+      confirmationMessage: `Su cita para ${serviceType} ha sido reservada para el ${date} a las ${time}. Su ID de cita es ${appointmentId}.`,
     };
   }
 );
 
 /**
- * Mock tool to simulate rescheduling an appointment.
- * In a real application, this would interact with a database or appointment service.
+ * Herramienta mock para simular la reprogramación de una cita.
  */
 const rescheduleAppointmentTool = ai.defineTool(
   {
     name: 'rescheduleAppointment',
-    description: 'Reschedules an existing dental appointment for a patient.',
+    description: 'Reprograma una cita dental existente para un paciente.',
     inputSchema: z.object({
-      patientId: z.string().describe('The unique identifier of the patient.'),
-      oldDate: z.string().optional().describe('The original date of the appointment if known (e.g., "YYYY-MM-DD").'),
-      oldTime: z.string().optional().describe('The original time of the appointment if known (e.g., "HH:MM").'),
-      appointmentId: z.string().optional().describe('The ID of the appointment to reschedule.'),
-      newDate: z.string().describe('The new desired date for the appointment (e.g., "YYYY-MM-DD").'),
-      newTime: z.string().describe('The new desired time for the appointment (e.g., "HH:MM").'),
-    }).refine(data => data.appointmentId || (data.oldDate && data.oldTime), {
-      message: "Either 'appointmentId' or both 'oldDate' and 'oldTime' must be provided to identify the appointment."
+      patientId: z.string().describe('El identificador único del paciente.'),
+      oldDate: z.string().optional().describe('La fecha original de la cita si se conoce.'),
+      oldTime: z.string().optional().describe('La hora original de la cita si se conoce.'),
+      appointmentId: z.string().optional().describe('El ID de la cita a reprogramar.'),
+      newDate: z.string().describe('La nueva fecha deseada para la cita.'),
+      newTime: z.string().describe('La nueva hora deseada para la cita.'),
     }),
     outputSchema: z.object({
       appointmentId: z.string(),
       confirmationMessage: z.string(),
     }),
   },
-  async ({ patientId, oldDate, oldTime, appointmentId, newDate, newTime }) => {
-    // Simulate API call or database interaction
-    const targetApptId = appointmentId || `(identified by ${oldDate} at ${oldTime})`;
-    console.log(`Mock: Rescheduling appointment ${targetApptId} for patient ${patientId} to ${newDate} at ${newTime}`);
-    const newApptId = appointmentId || `appt-${Math.random().toString(36).substring(2, 9)}`; // If no ID provided, assume new ID on reschedule
+  async ({ patientId, appointmentId, newDate, newTime }) => {
+    console.log(`Mock: Reprogramando cita ${appointmentId} para el paciente ${patientId} al ${newDate} a las ${newTime}`);
     return {
-      appointmentId: newApptId,
-      confirmationMessage: `Your appointment ${targetApptId} has been rescheduled to ${newDate} at ${newTime}. Your new appointment ID is ${newApptId}.`,
+      appointmentId: appointmentId || 'new-id',
+      confirmationMessage: `Su cita ha sido reprogramada para el ${newDate} a las ${newTime}.`,
     };
   }
 );
 
 /**
- * Mock tool to simulate canceling an appointment.
- * In a real application, this would interact with a database or appointment service.
+ * Herramienta mock para simular la cancelación de una cita.
  */
 const cancelAppointmentTool = ai.defineTool(
   {
     name: 'cancelAppointment',
-    description: 'Cancels an existing dental appointment for a patient.',
+    description: 'Cancela una cita dental existente para un paciente.',
     inputSchema: z.object({
-      patientId: z.string().describe('The unique identifier of the patient.'),
-      appointmentId: z.string().optional().describe('The ID of the appointment to cancel.'),
-      date: z.string().optional().describe('The date of the appointment to cancel (e.g., "YYYY-MM-DD").'),
-      time: z.string().optional().describe('The time of the appointment to cancel (e.g., "HH:MM").'),
-    }).refine(data => data.appointmentId || (data.date && data.time), {
-      message: "Either 'appointmentId' or both 'date' and 'time' must be provided to identify the appointment."
+      patientId: z.string().describe('El identificador único del paciente.'),
+      appointmentId: z.string().optional().describe('El ID de la cita a cancelar.'),
+      date: z.string().optional().describe('La fecha de la cita a cancelar.'),
+      time: z.string().optional().describe('La hora de la cita a cancelar.'),
     }),
     outputSchema: z.object({
       cancellationMessage: z.string(),
     }),
   },
-  async ({ patientId, appointmentId, date, time }) => {
-    // Simulate API call or database interaction
-    const targetApptId = appointmentId || `(identified by ${date} at ${time})`;
-    console.log(`Mock: Canceling appointment ${targetApptId} for patient ${patientId}`);
+  async ({ appointmentId }) => {
     return {
-      cancellationMessage: `Your appointment ${targetApptId} has been successfully canceled. We look forward to seeing you again.`,
+      cancellationMessage: `Su cita ${appointmentId} ha sido cancelada con éxito.`,
     };
   }
 );
@@ -127,18 +113,17 @@ const patientAIAppointmentConciergePrompt = ai.definePrompt({
   input: { schema: PatientAIAppointmentConciergeInputSchema },
   output: { schema: PatientAIAppointmentConciergeOutputSchema },
   tools: [bookAppointmentTool, rescheduleAppointmentTool, cancelAppointmentTool],
-  prompt: `You are DentaSync, an AI-powered dental appointment concierge. Your role is to assist patients in managing their appointments.
+  prompt: `Eres DentaSync, un conserje de citas dentales impulsado por IA. Tu función es ayudar a los pacientes a gestionar sus citas.
 
-Always be friendly, empathetic, and professional. Understand the patient's request to book, reschedule, or cancel appointments.
+Sé siempre amable, empático y profesional. Entiende la solicitud del paciente para reservar, reprogramar o cancelar citas.
 
-Use the provided tools to perform these actions. If you need more information to use a tool, politely ask the patient for it, specifying exactly what\'s missing (e.g., date, time, service type, or appointment ID).
+Utiliza las herramientas proporcionadas para realizar estas acciones. Si necesitas más información para usar una herramienta, pídela cortésmente al paciente, especificando exactamente qué falta (ej., fecha, hora, tipo de servicio o ID de cita).
 
-After successfully performing an action, provide a clear confirmation message to the patient and set the 'actionTaken' and 'details' fields in the output schema accordingly.
-If you cannot fulfill the request due to missing information, set 'actionTaken' to 'info_needed' and list the missing details in the 'missingInfo' array within 'details'.
-If no specific action is taken, set 'actionTaken' to 'none'.
+Después de realizar con éxito una acción, proporciona un mensaje de confirmación claro y establece los campos 'actionTaken' y 'details' en el esquema de salida.
+Si no puedes cumplir con la solicitud por falta de información, establece 'actionTaken' en 'info_needed' y enumera los detalles faltantes en 'missingInfo'.
 
-Patient ID: {{{patientId}}}
-Patient Message: {{{message}}}`,
+ID del Paciente: {{{patientId}}}
+Mensaje del Paciente: {{{message}}}`,
 });
 
 export async function patientAIAppointmentConcierge(input: PatientAIAppointmentConciergeInput): Promise<PatientAIAppointmentConciergeOutput> {

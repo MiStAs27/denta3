@@ -1,10 +1,11 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { BrainCircuit, Sparkles, CheckCircle, ArrowRight, Loader2, Calendar } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { BrainCircuit, Sparkles, CheckCircle, Loader2, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import { aiOptimizedAppointmentScheduling, type OptimalAppointmentSchedulingOutput } from '@/ai/flows/ai-optimized-appointment-scheduling'
 
 export default function SmartOptimizerPage() {
@@ -15,11 +16,11 @@ export default function SmartOptimizerPage() {
     setLoading(true)
     try {
       const data = await aiOptimizedAppointmentScheduling({
-        doctorScheduleDescription: "Dr. Ricardo is booked from 9 AM to 12 PM with 3 cleanings. Lunch is from 1 PM to 2 PM. Afternoon has a gap between 2:30 and 4:00 PM.",
-        treatmentType: "Emergency Root Canal",
+        doctorScheduleDescription: "El Dr. Ricardo está ocupado de 9 AM a 12 PM con 3 limpiezas. El almuerzo es de 1 PM a 2 PM. La tarde tiene un hueco entre las 2:30 y las 4:00 PM.",
+        treatmentType: "Endodoncia de Urgencia",
         requiredDurationMinutes: 45,
-        clinicOperatingHours: "9 AM to 6 PM",
-        patientPreferences: "Prefers late afternoon slots"
+        clinicOperatingHours: "9 AM a 6 PM",
+        patientPreferences: "Prefiere horarios al final de la tarde"
       })
       setResult(data)
     } finally {
@@ -33,35 +34,35 @@ export default function SmartOptimizerPage() {
         <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-4 border border-primary/20">
           <BrainCircuit size={32} />
         </div>
-        <h1 className="text-3xl font-headline font-bold text-foreground">Smart Slot Optimizer</h1>
+        <h1 className="text-3xl font-headline font-bold text-foreground">Optimizador Inteligente de Espacios</h1>
         <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
-          Utilize clinical logic and GenAI to fill gaps in your agenda and maximize daily productivity.
+          Utilice la lógica clínica y la IA generativa para llenar los huecos en su agenda y maximizar la productividad diaria.
         </p>
       </div>
 
       <Card className="border-none shadow-xl overflow-hidden">
         <div className="bg-primary p-1 text-center text-[10px] font-bold tracking-widest text-white uppercase">
-          AI Power Integrated
+          Poder de IA Integrado
         </div>
         <CardContent className="p-8">
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">Doctor Availability & Schedule</label>
+              <label className="text-sm font-semibold text-foreground">Disponibilidad y Horario del Doctor</label>
               <Textarea 
-                placeholder="Describe current schedule gaps or constraints..." 
+                placeholder="Describa los huecos o restricciones del horario actual..." 
                 className="min-h-[120px] bg-muted/30 border-none resize-none"
-                defaultValue="Dr. Ricardo is booked from 9 AM to 12 PM with 3 cleanings. Lunch is from 1 PM to 2 PM. Afternoon has a gap between 2:30 and 4:00 PM."
+                defaultValue="El Dr. Ricardo está ocupado de 9 AM a 12 PM con 3 limpiezas. El almuerzo es de 1 PM a 2 PM. La tarde tiene un hueco entre las 2:30 y las 4:00 PM."
               />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Treatment Needed</label>
-                <div className="p-3 bg-muted/30 rounded-lg text-sm">Emergency Root Canal</div>
+                <label className="text-sm font-semibold text-foreground">Tratamiento Necesario</label>
+                <div className="p-3 bg-muted/30 rounded-lg text-sm">Endodoncia de Urgencia</div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Duration</label>
-                <div className="p-3 bg-muted/30 rounded-lg text-sm">45 Minutes</div>
+                <label className="text-sm font-semibold text-foreground">Duración</label>
+                <div className="p-3 bg-muted/30 rounded-lg text-sm">45 Minutos</div>
               </div>
             </div>
 
@@ -71,7 +72,7 @@ export default function SmartOptimizerPage() {
               className="w-full bg-primary hover:bg-primary/90 h-12 text-white font-bold gap-2"
             >
               {loading ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-              Analyze & Suggest Slots
+              Analizar y Sugerir Espacios
             </Button>
           </div>
         </CardContent>
@@ -81,7 +82,7 @@ export default function SmartOptimizerPage() {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Sparkles className="text-secondary" size={20} />
-            Optimized Suggestions
+            Sugerencias Optimizadas
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -92,12 +93,12 @@ export default function SmartOptimizerPage() {
                     <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
                       <Calendar size={20} />
                     </div>
-                    <Badge variant="outline" className="text-[10px] border-green-200 text-green-700">Recommended</Badge>
+                    <Badge variant="outline" className="text-[10px] border-green-200 text-green-700">Recomendado</Badge>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{slot.startTime} - {slot.endTime}</p>
                   <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{slot.reason}</p>
                   <Button variant="ghost" className="w-full mt-4 group-hover:bg-primary group-hover:text-white transition-colors h-8 text-xs">
-                    Select Slot
+                    Seleccionar Espacio
                   </Button>
                 </CardContent>
               </Card>
@@ -108,7 +109,7 @@ export default function SmartOptimizerPage() {
             <CardContent className="p-6 flex items-start gap-4">
               <CheckCircle className="text-secondary shrink-0 mt-1" size={20} />
               <div>
-                <p className="font-bold text-secondary text-sm uppercase tracking-wider">Optimization Notes</p>
+                <p className="font-bold text-secondary text-sm uppercase tracking-wider">Notas de Optimización</p>
                 <p className="text-sm text-foreground/80 mt-1 leading-relaxed">
                   {result.optimizationNotes}
                 </p>

@@ -13,16 +13,16 @@ export default function Home() {
           Denta<span className="text-primary">Sync</span>
         </h1>
         <p className="text-muted-foreground mt-4 text-lg max-w-xl mx-auto">
-          The all-in-one dental management platform powered by AI. Digital records, smart scheduling, and automated patient care.
+          La plataforma de gestión dental todo en uno impulsada por IA. Registros digitales, programación inteligente y atención automatizada al paciente.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full mb-12">
         {[
-          { title: 'Interactive Odontogram', desc: 'Real-time tooth procedures tracking', icon: Stethoscope },
-          { title: 'Smart Slot Optimizer', desc: 'AI-driven agenda efficiency', icon: BrainCircuit },
-          { title: 'AI Concierge', desc: '24/7 patient booking support', icon: UserCheck },
-          { title: 'Secure Cloud Records', desc: 'GDPR-ready patient history', icon: ShieldCheck },
+          { title: 'Odontograma Interactivo', desc: 'Seguimiento de procedimientos dentales en tiempo real', icon: Stethoscope },
+          { title: 'Optimizador de Espacios', desc: 'Eficiencia de agenda impulsada por IA', icon: BrainCircuit },
+          { title: 'Conserje IA', desc: 'Soporte de reserva para pacientes 24/7', icon: UserCheck },
+          { title: 'Registros Seguros en la Nube', desc: 'Historial de pacientes listo para GDPR', icon: ShieldCheck },
         ].map((f, i) => (
           <div key={i} className="bg-white p-6 rounded-2xl border border-muted shadow-sm hover:shadow-md transition-shadow">
             <f.icon className="text-primary mb-4" size={28} />
@@ -34,13 +34,13 @@ export default function Home() {
 
       <Link href="/dashboard">
         <Button size="lg" className="bg-primary text-white hover:bg-primary/90 h-16 px-10 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 gap-3 group">
-          Enter Clinic Portal
+          Entrar al Portal Clínico
           <ChevronRight className="group-hover:translate-x-1 transition-transform" />
         </Button>
       </Link>
       
       <p className="mt-8 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-        DentaSync SaaS v1.0 • Clinical Navy Edition
+        DentaSync SaaS v1.0 • Edición Armada Clínica
       </p>
     </div>
   )

@@ -1,36 +1,36 @@
 'use server';
 /**
- * @fileOverview An AI-powered tool that suggests optimal appointment slots for patients.
+ * @fileOverview Una herramienta impulsada por IA que sugiere espacios óptimos para citas de pacientes.
  *
- * - aiOptimizedAppointmentScheduling - A function that suggests optimal appointment slots.
- * - OptimalAppointmentSchedulingInput - The input type for the aiOptimizedAppointmentScheduling function.
- * - OptimalAppointmentSchedulingOutput - The return type for the aiOptimizedAppointmentScheduling function.
+ * - aiOptimizedAppointmentScheduling - Función que sugiere espacios óptimos.
+ * - OptimalAppointmentSchedulingInput - Tipo de entrada para la función.
+ * - OptimalAppointmentSchedulingOutput - Tipo de retorno para la función.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-// Input Schema
+// Esquema de Entrada
 const OptimalAppointmentSchedulingInputSchema = z.object({
   doctorScheduleDescription: z.string().describe(
-    "A detailed description of the doctor's availability, including existing appointments and blocked times. Example: 'Dr. Smith is available from 9 AM to 5 PM on Monday. Existing appointments: from 10:00 to 10:30 (Patient A), from 15:00 to 16:00 (Patient B). Blocked for lunch: from 13:00 to 14:00.'"
+    "Una descripción detallada de la disponibilidad del doctor, incluyendo citas existentes y tiempos bloqueados. Ejemplo: 'El Dr. Smith está disponible de 9 AM a 5 PM los lunes. Citas existentes: de 10:00 a 10:30 (Paciente A), de 15:00 a 16:00 (Paciente B). Bloqueado para el almuerzo: de 13:00 a 14:00.'"
   ),
-  treatmentType: z.string().describe("The type of treatment the patient needs (e.g., 'Dental Cleaning', 'Filling', 'Crown')."),
-  requiredDurationMinutes: z.number().int().positive().describe("The estimated duration of the treatment in minutes."),
-  patientPreferences: z.string().optional().describe("Any specific preferences the patient might have (e.g., 'prefers morning appointments', 'needs to finish by 3 PM')."),
-  clinicOperatingHours: z.string().describe("The overall operating hours of the clinic for the day or period being considered. Example: 'Monday to Friday, 8 AM to 6 PM.'"),
+  treatmentType: z.string().describe("El tipo de tratamiento que el paciente necesita (ej., 'Limpieza Dental', 'Empaste', 'Corona')."),
+  requiredDurationMinutes: z.number().int().positive().describe("La duración estimada del tratamiento en minutos."),
+  patientPreferences: z.string().optional().describe("Cualquier preferencia específica que el paciente pueda tener (ej., 'prefiere citas por la mañana', 'necesita terminar para las 3 PM')."),
+  clinicOperatingHours: z.string().describe("El horario general de funcionamiento de la clínica para el día o periodo considerado. Ejemplo: 'Lunes a Viernes, 8 AM a 6 PM.'"),
 });
 
 export type OptimalAppointmentSchedulingInput = z.infer<typeof OptimalAppointmentSchedulingInputSchema>;
 
-// Output Schema
+// Esquema de Salida
 const OptimalAppointmentSchedulingOutputSchema = z.object({
   suggestedSlots: z.array(z.object({
-    startTime: z.string().describe("The start time of the suggested appointment slot in HH:MM format (e.g., '09:00', '14:30')."),
-    endTime: z.string().describe("The end time of the suggested appointment slot in HH:MM format (e.g., '10:00', '15:00')."),
-    reason: z.string().optional().describe("A brief explanation for why this slot is suggested (e.g., 'Fits perfectly between existing appointments', 'Minimizes idle time')."),
-  })).describe("A list of optimal appointment slots suggested by the AI."),
-  optimizationNotes: z.string().describe("A brief explanation of why these slots were chosen, how they optimize the schedule, and how they address the patient's preferences or other constraints."),
+    startTime: z.string().describe("La hora de inicio del espacio de cita sugerido en formato HH:MM (ej., '09:00', '14:30')."),
+    endTime: z.string().describe("La hora de finalización del espacio de cita sugerido en formato HH:MM (ej., '10:00', '15:00')."),
+    reason: z.string().optional().describe("Una breve explicación de por qué se sugiere este espacio (ej., 'Encaja perfectamente entre citas existentes', 'Minimiza el tiempo de inactividad')."),
+  })).describe("Una lista de espacios de cita óptimos sugeridos por la IA."),
+  optimizationNotes: z.string().describe("Una breve explicación de por qué se eligieron estos espacios, cómo optimizan el horario y cómo abordan las preferencias del paciente u otras restricciones."),
 });
 
 export type OptimalAppointmentSchedulingOutput = z.infer<typeof OptimalAppointmentSchedulingOutputSchema>;
@@ -43,20 +43,20 @@ const prompt = ai.definePrompt({
   name: 'optimizeAppointmentPrompt',
   input: { schema: OptimalAppointmentSchedulingInputSchema },
   output: { schema: OptimalAppointmentSchedulingOutputSchema },
-  prompt: `You are an intelligent AI assistant specialized in optimizing dental clinic schedules. Your goal is to suggest the most efficient appointment slots for patients, minimizing doctor idle time and ensuring smooth operational flow.
+  prompt: `Eres un asistente de IA inteligente especializado en optimizar los horarios de las clínicas dentales. Tu objetivo es sugerir los espacios de cita más eficientes para los pacientes, minimizando el tiempo de inactividad del doctor y asegurando un flujo operativo suave.
 
-Here is the information you need to consider:
+Aquí está la información que debes considerar:
 
-Doctor's Schedule and Availability: {{{doctorScheduleDescription}}}
-Clinic Operating Hours: {{{clinicOperatingHours}}}
-Treatment Type: {{{treatmentType}}}
-Required Duration for Treatment: {{{requiredDurationMinutes}}} minutes
-Patient Preferences: {{{patientPreferences}}}
+Descripción del Horario del Doctor: {{{doctorScheduleDescription}}}
+Horario de la Clínica: {{{clinicOperatingHours}}}
+Tipo de Tratamiento: {{{treatmentType}}}
+Duración Requerida: {{{requiredDurationMinutes}}} minutos
+Preferencias del Paciente: {{{patientPreferences}}}
 
-Please provide up to 3 optimal appointment slots based on the doctor's availability, the required treatment duration, and patient preferences. Prioritize slots that reduce idle time or fit well into existing gaps.
-If no suitable slots can be found, you should still return an empty array for 'suggestedSlots' and provide an explanation in 'optimizationNotes'.
+Por favor, proporciona hasta 3 espacios de cita óptimos basados en la disponibilidad del doctor, la duración requerida del tratamiento y las preferencias del paciente. Prioriza los espacios que reducen el tiempo muerto o encajan bien en los huecos existentes.
+Si no se pueden encontrar espacios adecuados, debes devolver una matriz vacía para 'suggestedSlots' y proporcionar una explicación en 'optimizationNotes'.
 
-Format your response as a JSON object matching the output schema.
+Formatea tu respuesta como un objeto JSON que coincida con el esquema de salida.
 `,
 });
 

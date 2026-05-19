@@ -31,8 +31,8 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
               AM
             </div>
             <h2 className="text-xl font-bold text-foreground">Alvaro Morte</h2>
-            <p className="text-sm text-muted-foreground font-medium">Patient ID: {patientId}</p>
-            <Badge className="mt-2 bg-green-100 text-green-700 border-green-200">Active Patient</Badge>
+            <p className="text-sm text-muted-foreground font-medium">ID Paciente: {patientId}</p>
+            <Badge className="mt-2 bg-green-100 text-green-700 border-green-200">Paciente Activo</Badge>
             
             <div className="w-full space-y-4 mt-8 pt-8 border-t">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -45,7 +45,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Calendar size={16} className="text-primary" />
-                <span>Born: Feb 23, 1978</span>
+                <span>Nacimiento: 23 Feb, 1978</span>
               </div>
             </div>
 
@@ -65,16 +65,16 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
           <Tabs defaultValue="clinical" className="w-full">
             <TabsList className="bg-white p-1 h-12 shadow-sm mb-6 border w-full justify-start overflow-x-auto">
               <TabsTrigger value="clinical" className="gap-2 px-6">
-                <Stethoscope size={16} /> Clinical Record
+                <Stethoscope size={16} /> Historial Clínico
               </TabsTrigger>
               <TabsTrigger value="odontogram" className="gap-2 px-6">
-                <FileText size={16} /> Odontogram
+                <FileText size={16} /> Odontograma
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-2 px-6">
-                <History size={16} /> History
+                <History size={16} /> Historia
               </TabsTrigger>
               <TabsTrigger value="images" className="gap-2 px-6">
-                <ImageIcon size={16} /> X-Rays
+                <ImageIcon size={16} /> Radiografías
               </TabsTrigger>
             </TabsList>
 
@@ -82,40 +82,40 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="border-none shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg">Recent Diagnosis</CardTitle>
+                    <CardTitle className="text-lg">Diagnósticos Recientes</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 rounded-lg bg-red-50 border border-red-100">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-red-600 uppercase">Warning</span>
-                        <span className="text-[10px] text-red-400">Nov 12, 2023</span>
+                        <span className="text-xs font-bold text-red-600 uppercase">Alerta</span>
+                        <span className="text-[10px] text-red-400">12 Nov, 2023</span>
                       </div>
-                      <p className="text-sm font-semibold text-red-900">Severe Allergy to Penicillin</p>
-                      <p className="text-xs text-red-700 mt-1">Patient reports hives and swelling upon ingestion.</p>
+                      <p className="text-sm font-semibold text-red-900">Alergia Grave a la Penicilina</p>
+                      <p className="text-xs text-red-700 mt-1">El paciente informa urticaria e hinchazón al ingerirla.</p>
                     </div>
                     <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                      <p className="text-sm font-semibold text-blue-900">Current Plan: Orthodontics Phase II</p>
-                      <p className="text-xs text-blue-700 mt-1">Braces adjustment scheduled every 4 weeks.</p>
+                      <p className="text-sm font-semibold text-blue-900">Plan Actual: Ortodoncia Fase II</p>
+                      <p className="text-xs text-blue-700 mt-1">Ajuste de brackets programado cada 4 semanas.</p>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-none shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg">Stats</CardTitle>
+                    <CardTitle className="text-lg">Estadísticas</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex justify-between items-center border-b pb-3">
-                      <span className="text-sm text-muted-foreground">Total Paid</span>
+                      <span className="text-sm text-muted-foreground">Total Pagado</span>
                       <span className="text-sm font-bold text-green-600">$3,450.00</span>
                     </div>
                     <div className="flex justify-between items-center border-b pb-3">
-                      <span className="text-sm text-muted-foreground">Pending Balance</span>
+                      <span className="text-sm text-muted-foreground">Saldo Pendiente</span>
                       <span className="text-sm font-bold text-red-600">$120.00</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Next Appt</span>
-                      <span className="text-sm font-bold text-primary">Dec 15, 2023</span>
+                      <span className="text-sm text-muted-foreground">Próxima Cita</span>
+                      <span className="text-sm font-bold text-primary">15 Dic, 2023</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -124,17 +124,17 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
               <Card className="border-none shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>Evolution Notes</CardTitle>
-                    <CardDescription>Chronological record of clinical observations.</CardDescription>
+                    <CardTitle>Notas de Evolución</CardTitle>
+                    <CardDescription>Registro cronológico de observaciones clínicas.</CardDescription>
                   </div>
                   <Button variant="outline" size="sm" className="gap-2">
-                    <ClipboardList size={16} /> New Note
+                    <ClipboardList size={16} /> Nueva Nota
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { date: 'Nov 12, 2023', dr: 'Dr. Ricardo Lopez', text: 'Adjustment of lower arch wire. Patient reports slight discomfort on molar 46. Instructed on proper interdental brushing.' },
-                    { date: 'Oct 15, 2023', dr: 'Dr. Ricardo Lopez', text: 'Professional cleaning performed. No signs of new caries. Gum health improved since last visit.' },
+                    { date: '12 Nov, 2023', dr: 'Dr. Ricardo Lopez', text: 'Ajuste del arco inferior. El paciente informa de una ligera molestia en el molar 46. Instrucciones sobre el cepillado interdental adecuado.' },
+                    { date: '15 Oct, 2023', dr: 'Dr. Ricardo Lopez', text: 'Limpieza profesional realizada. No hay signos de nuevas caries. Salud de las encías mejorada desde la última visita.' },
                   ].map((note, i) => (
                     <div key={i} className="p-4 rounded-xl border border-muted-foreground/10 hover:border-primary/20 transition-colors">
                       <div className="flex items-center justify-between mb-2">
@@ -155,7 +155,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
             <TabsContent value="history">
               <Card className="border-none shadow-sm">
                 <CardContent className="p-12 text-center text-muted-foreground">
-                  History log for patient visits will appear here.
+                  El registro de visitas del paciente aparecerá aquí.
                 </CardContent>
               </Card>
             </TabsContent>

@@ -21,19 +21,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
-  SidebarProvider,
-  SidebarTrigger
+  SidebarFooter
 } from '@/components/ui/sidebar'
 
 const NAV_ITEMS = [
-  { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Vista General', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Agenda', href: '/agenda', icon: Calendar },
-  { name: 'Patients', href: '/patients', icon: Users },
-  { name: 'Smart Optimizer', href: '/ai-optimizer', icon: BrainCircuit },
-  { name: 'AI Concierge', href: '/concierge', icon: MessageSquare },
-  { name: 'Analytics', href: '/analytics', icon: Activity },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Pacientes', href: '/patients', icon: Users },
+  { name: 'Optimizador IA', href: '/ai-optimizer', icon: BrainCircuit },
+  { name: 'Conserje IA', href: '/concierge', icon: MessageSquare },
+  { name: 'Analíticas', href: '/analytics', icon: Activity },
+  { name: 'Configuración', href: '/settings', icon: Settings },
 ]
 
 export function ClinicSidebar() {
@@ -71,11 +69,11 @@ export function ClinicSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-4 group-data-[collapsible=icon]:hidden">
         <div className="bg-primary/20 p-3 rounded-lg border border-primary-foreground/10">
-          <p className="text-xs text-primary-foreground/80 font-medium">Free Plan</p>
+          <p className="text-xs text-primary-foreground/80 font-medium">Plan Gratuito</p>
           <div className="mt-2 h-1 w-full bg-white/20 rounded-full overflow-hidden">
             <div className="h-full bg-secondary w-2/3" />
           </div>
-          <p className="text-[10px] mt-1 text-primary-foreground/60 text-right">650 / 1000 patients</p>
+          <p className="text-[10px] mt-1 text-primary-foreground/60 text-right">650 / 1000 pacientes</p>
         </div>
       </SidebarFooter>
     </Sidebar>

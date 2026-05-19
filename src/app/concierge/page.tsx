@@ -2,11 +2,12 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { MessageSquare, Send, Bot, User, Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Send, Bot, User, Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { patientAIAppointmentConcierge } from '@/ai/flows/patient-ai-appointment-concierge'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 interface Message {
   role: 'ai' | 'user'
@@ -16,7 +17,7 @@ interface Message {
 
 export default function ConciergePage() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: 'Hello! I am DentaSync AI, your personal clinical concierge. How can I help you with your appointments today?' }
+    { role: 'ai', text: '¡Hola! Soy la IA de DentaSync, su conserje clínico personal. ¿En qué puedo ayudarle con sus citas hoy?' }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,7 +49,7 @@ export default function ConciergePage() {
         action: result.actionTaken !== 'none' ? result.actionTaken : undefined
       }])
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'ai', text: 'I am sorry, but I encountered an error processing your request. Please try again.' }])
+      setMessages(prev => [...prev, { role: 'ai', text: 'Lo siento, pero he encontrado un error al procesar su solicitud. Por favor, inténtelo de nuevo.' }])
     } finally {
       setLoading(false)
     }
@@ -58,11 +59,11 @@ export default function ConciergePage() {
     <div className="max-w-4xl mx-auto h-[calc(100vh-10rem)] flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">AI Patient Concierge</h1>
-          <p className="text-muted-foreground mt-1">24/7 automated appointment management system.</p>
+          <h1 className="text-3xl font-headline font-bold text-foreground">Conserje IA para Pacientes</h1>
+          <p className="text-muted-foreground mt-1">Sistema automatizado de gestión de citas 24/7.</p>
         </div>
         <Badge className="bg-secondary/10 text-secondary hover:bg-secondary/20 border-secondary/20 px-3 py-1 gap-2">
-          <Sparkles size={14} /> AI Active
+          <Sparkles size={14} /> IA Activa
         </Badge>
       </div>
 
@@ -73,8 +74,8 @@ export default function ConciergePage() {
               <Bot size={24} />
             </div>
             <div>
-              <CardTitle className="text-white">DentaSync Concierge</CardTitle>
-              <CardDescription className="text-white/60">Automated Patient Support Agent</CardDescription>
+              <CardTitle className="text-white">Conserje DentaSync</CardTitle>
+              <CardDescription className="text-white/60">Agente Automatizado de Soporte al Paciente</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -101,7 +102,7 @@ export default function ConciergePage() {
                 {m.action && (
                   <div className="flex items-center gap-2 bg-green-50 text-green-700 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-green-100 w-fit">
                     <CheckCircle2 size={12} />
-                    Action: {m.action}
+                    Acción: {m.action}
                   </div>
                 )}
               </div>
@@ -110,7 +111,7 @@ export default function ConciergePage() {
           {loading && (
             <div className="flex items-center gap-3 text-muted-foreground italic text-sm animate-pulse">
               <Loader2 className="animate-spin" size={16} />
-              AI is thinking...
+              La IA está pensando...
             </div>
           )}
         </CardContent>
@@ -118,7 +119,7 @@ export default function ConciergePage() {
         <div className="p-6 bg-muted/30 border-t">
           <div className="flex gap-3">
             <Input 
-              placeholder="Type your request (e.g., 'I want to reschedule my cleaning next Tuesday')" 
+              placeholder="Escriba su solicitud (ej. 'Quiero reprogramar mi limpieza para el próximo martes')" 
               className="bg-white h-12 shadow-sm border-none focus-visible:ring-1 focus-visible:ring-primary/20"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -133,14 +134,10 @@ export default function ConciergePage() {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-3 font-medium uppercase tracking-tighter">
-            Powered by DentaSync Intelligent Scheduling Engine
+            Impulsado por el Motor de Programación Inteligente DentaSync
           </p>
         </div>
       </Card>
     </div>
   )
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ')
 }

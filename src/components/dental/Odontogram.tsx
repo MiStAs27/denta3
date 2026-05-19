@@ -70,19 +70,19 @@ export function Odontogram() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl">Interactive Odontogram</CardTitle>
-            <CardDescription>Click a tooth to toggle clinical status</CardDescription>
+            <CardTitle className="text-xl">Odontograma Interactivo</CardTitle>
+            <CardDescription>Haga clic en un diente para cambiar su estado clínico</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">Decay</Badge>
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">Filled</Badge>
-            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Crown</Badge>
+            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">Caries</Badge>
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">Empaste</Badge>
+            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Corona</Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-12 py-8">
         <div className="space-y-4">
-          <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upper Jaw</p>
+          <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mandíbula Superior</p>
           <div className="flex justify-center gap-8">
             {renderJaw(11, 18, true)}
             {renderJaw(21, 28)}
@@ -90,7 +90,7 @@ export function Odontogram() {
         </div>
         
         <div className="space-y-4">
-          <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lower Jaw</p>
+          <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mandíbula Inferior</p>
           <div className="flex justify-center gap-8">
             {renderJaw(41, 48, true)}
             {renderJaw(31, 38)}

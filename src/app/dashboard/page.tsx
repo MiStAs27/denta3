@@ -9,7 +9,7 @@ import {
   Clock, 
   CheckCircle2, 
   AlertCircle,
-  Stethoscope
+  BrainCircuit
 } from 'lucide-react'
 import { 
   LineChart, 
@@ -23,28 +23,30 @@ import {
   Bar,
   Cell
 } from 'recharts'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 const STATS = [
-  { label: 'Active Patients', value: '1,284', change: '+12%', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-  { label: 'Appointments Today', value: '24', change: '8 left', icon: Calendar, color: 'text-cyan-600', bg: 'bg-cyan-100' },
-  { label: 'Retention Rate', value: '94.2%', change: '+2.1%', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
-  { label: 'Avg Wait Time', value: '12 min', change: '-4 min', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
+  { label: 'Pacientes Activos', value: '1,284', change: '+12%', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+  { label: 'Citas Hoy', value: '24', change: '8 faltan', icon: Calendar, color: 'text-cyan-600', bg: 'bg-cyan-100' },
+  { label: 'Tasa de Retención', value: '94.2%', change: '+2.1%', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
+  { label: 'Tiempo de Espera Medio', value: '12 min', change: '-4 min', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
 ]
 
 const PATIENT_FLOW_DATA = [
-  { name: 'Mon', count: 42 },
-  { name: 'Tue', count: 58 },
-  { name: 'Wed', count: 45 },
-  { name: 'Thu', count: 62 },
-  { name: 'Fri', count: 38 },
-  { name: 'Sat', count: 20 },
+  { name: 'Lun', count: 42 },
+  { name: 'Mar', count: 58 },
+  { name: 'Mie', count: 45 },
+  { name: 'Jue', count: 62 },
+  { name: 'Vie', count: 38 },
+  { name: 'Sab', count: 20 },
 ]
 
 const TREATMENT_DATA = [
-  { name: 'Cleaning', count: 45, color: 'hsl(var(--primary))' },
-  { name: 'Extraction', count: 12, color: 'hsl(var(--secondary))' },
-  { name: 'Ortho', count: 28, color: 'hsl(var(--chart-3))' },
-  { name: 'Filling', count: 35, color: 'hsl(var(--chart-4))' },
+  { name: 'Limpieza', count: 45, color: 'hsl(var(--primary))' },
+  { name: 'Extracción', count: 12, color: 'hsl(var(--secondary))' },
+  { name: 'Orto', count: 28, color: 'hsl(var(--chart-3))' },
+  { name: 'Empaste', count: 35, color: 'hsl(var(--chart-4))' },
 ]
 
 export default function DashboardOverview() {
@@ -52,12 +54,12 @@ export default function DashboardOverview() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">Clinic Overview</h1>
-          <p className="text-muted-foreground mt-1">Welcome back, Dr. Lopez. Here's what's happening today.</p>
+          <h1 className="text-3xl font-headline font-bold text-foreground">Vista General de la Clínica</h1>
+          <p className="text-muted-foreground mt-1">Bienvenido de nuevo, Dr. Lopez. Esto es lo que está pasando hoy.</p>
         </div>
         <div className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-primary/20 cursor-pointer hover:bg-primary/90 transition-colors">
           <CheckCircle2 size={18} />
-          <span className="text-sm font-semibold">Start Morning Shift</span>
+          <span className="text-sm font-semibold">Iniciar Turno de Mañana</span>
         </div>
       </div>
 
@@ -81,8 +83,8 @@ export default function DashboardOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-none shadow-sm">
           <CardHeader>
-            <CardTitle>Patient Attendance (Week)</CardTitle>
-            <CardDescription>Visualizing patient throughput over the last 6 working days.</CardDescription>
+            <CardTitle>Asistencia de Pacientes (Semana)</CardTitle>
+            <CardDescription>Visualización del flujo de pacientes en los últimos 6 días laborales.</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -108,8 +110,8 @@ export default function DashboardOverview() {
 
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle>Top Treatments</CardTitle>
-            <CardDescription>Most requested services this month.</CardDescription>
+            <CardTitle>Tratamientos Top</CardTitle>
+            <CardDescription>Servicios más solicitados este mes.</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -135,16 +137,16 @@ export default function DashboardOverview() {
          <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Upcoming Appointments</CardTitle>
-                <CardDescription>Next 3 patients in the queue.</CardDescription>
+                <CardTitle>Próximas Citas</CardTitle>
+                <CardDescription>Siguientes 3 pacientes en cola.</CardDescription>
               </div>
-              <Button variant="outline" size="sm">View All</Button>
+              <Button variant="outline" size="sm">Ver Todo</Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { name: 'Elena Gilbert', time: '10:30 AM', treatment: 'Invisalign Follow-up', status: 'In Waitroom' },
-                { name: 'Stefan Salvatore', time: '11:15 AM', treatment: 'Root Canal Therapy', status: 'Confirmed' },
-                { name: 'Damon Salvatore', time: '12:00 PM', treatment: 'Dental Cleaning', status: 'Pending' },
+                { name: 'Elena Gilbert', time: '10:30 AM', treatment: 'Seguimiento Invisalign', status: 'En Espera' },
+                { name: 'Stefan Salvatore', time: '11:15 AM', treatment: 'Terapia de Conducto', status: 'Confirmada' },
+                { name: 'Damon Salvatore', time: '12:00 PM', treatment: 'Limpieza Dental', status: 'Pendiente' },
               ].map((patient, i) => (
                 <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
@@ -172,28 +174,24 @@ export default function DashboardOverview() {
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
                 <BrainCircuit size={20} className="text-secondary" />
-                <span className="text-xs font-bold tracking-widest uppercase">Smart Slot Optimizer</span>
+                <span className="text-xs font-bold tracking-widest uppercase">Optimizador de Espacios IA</span>
               </div>
-              <CardTitle className="text-2xl text-white">Optimize Today's Schedule</CardTitle>
-              <CardDescription className="text-white/70">Our AI found 3 gaps that can be filled to maximize clinic revenue.</CardDescription>
+              <CardTitle className="text-2xl text-white">Optimizar Agenda de Hoy</CardTitle>
+              <CardDescription className="text-white/70">Nuestra IA encontró 3 huecos que pueden llenarse para maximizar los ingresos.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10">
               <div className="bg-white/10 rounded-xl p-4 border border-white/20 backdrop-blur-sm">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="text-secondary shrink-0" size={18} />
-                  <p className="text-sm">Shift the 2:00 PM cleaning to 1:30 PM to create a slot for an urgent crown replacement.</p>
+                  <p className="text-sm">Adelantar la limpieza de las 2:00 PM a la 1:30 PM para crear un espacio para una corona urgente.</p>
                 </div>
               </div>
               <Button className="w-full mt-6 bg-secondary hover:bg-secondary/90 text-white border-none">
-                Run Optimization
+                Ejecutar Optimización
               </Button>
             </CardContent>
          </Card>
       </div>
     </div>
   )
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ')
 }
