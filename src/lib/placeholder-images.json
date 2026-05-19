@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-clinic",
+      "description": "Modern dental clinic interior",
+      "imageUrl": "https://picsum.photos/seed/dentasync-clinic/1200/600",
+      "imageHint": "modern dental clinic interior"
+    },
+    {
+      "id": "doctor-smith",
+      "description": "Lead Dentist Dr. Smith",
+      "imageUrl": "https://picsum.photos/seed/dentasync-doc/400/400",
+      "imageHint": "professional dentist portrait"
+    },
+    {
+      "id": "patient-1",
+      "description": "Patient Portrait",
+      "imageUrl": "https://picsum.photos/seed/patient1/200/200",
+      "imageHint": "smiling person portrait"
+    }
+  ]
 }
