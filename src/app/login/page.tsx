@@ -42,7 +42,7 @@ export default function LoginPage() {
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="bg-transparent text-white">
             <span className="font-headline text-4xl font-bold tracking-tight flex items-center gap-1">
-              denta<span className="text-[#d51375] font-light">sync</span>
+              Denta<span className="text-[#0B7D99] font-light">Sync</span>
             </span>
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function LoginPage() {
                   <Input 
                     id="email" 
                     placeholder="ejemplo@correo.com" 
-                    className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#d51375]" 
+                    className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#0B7D99]" 
                     required 
                   />
                 </div>
@@ -72,7 +72,7 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-slate-700">Contraseña</Label>
-                  <Link href="#" className="text-xs text-[#d51375] hover:underline">
+                  <Link href="#" className="text-xs text-[#0B7D99] hover:underline">
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
@@ -82,7 +82,7 @@ export default function LoginPage() {
                     id="password" 
                     type="password" 
                     placeholder="••••••••"
-                    className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#d51375]" 
+                    className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#0B7D99]" 
                     required 
                   />
                 </div>
@@ -90,7 +90,7 @@ export default function LoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-[#d51375] hover:bg-[#b00f60] text-white mt-6 h-12 text-base font-bold shadow-md shadow-[#d51375]/20" 
+                className="w-full bg-[#0B7D99] hover:bg-[#b00f60] text-white mt-6 h-12 text-base font-bold shadow-md shadow-[#d51375]/20" 
                 disabled={isLoading}
               >
                 {isLoading ? "Ingresando..." : "Entrar a DentaSync"}
