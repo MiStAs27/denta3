@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth"; // <-- 1. Importamos la autenticación
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,10 +11,9 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Inicializamos Firebase solo si no ha sido inicializado antes
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Inicializamos la Base de Datos (Firestore)
 const db = getFirestore(app);
+const auth = getAuth(app); // <-- 2. Inicializamos la autenticación
 
-export { db };
+export { db, auth }; // <-- 3. Exportamos auth para poder usarlo en el login

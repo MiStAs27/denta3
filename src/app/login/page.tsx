@@ -1,109 +1,100 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Lock, Mail, ChevronLeft } from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase"; // Importamos la conexión que acabamos de actualizar
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [cargando, setCargando] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    // Simulate authentication and automatic role detection
-    setTimeout(() => {
-      setIsLoading(false)
-      // Redirect to dashboard (in a real app, this would depend on the user's role)
-      router.push('/dashboard')
-    }, 1000)
-  }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setCargando(true);
+
+    try {
+      // Intentamos iniciar sesión con Firebase
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // Si funciona, redirigimos al usuario al dashboard
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("Error al iniciar sesión:", err);
+      // Mensajes de error amigables
+      if (err.code === 'auth/invalid-credential') {
+        setError("Correo o contraseña incorrectos.");
+      } else {
+        setError("Ocurrió un error al intentar iniciar sesión.");
+      }
+    } finally {
+      setCargando(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#04112e] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-5%] w-[60%] h-[60%] rounded-full bg-cyan-500/10 blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[100px]"></div>
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        <Link href="/" className="inline-flex items-center text-white/70 hover:text-white mb-6 text-sm transition-colors">
-          <ChevronLeft size={16} className="mr-1" />
-          Volver al inicio
-        </Link>
+    <div className="flex h-screen w-full items-center justify-center bg-[#F5F8FA]">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 border border-gray-100">
         
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="bg-transparent text-white">
-            <span className="font-headline text-4xl font-bold tracking-tight flex items-center gap-1">
-              Denta<span className="text-[#0B7D99] font-light">Sync</span>
-            </span>
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-[#2651A3] mb-2">DentaSync</h1>
+          <p className="text-gray-500">Ingresa a tu portal clínico</p>
         </div>
 
-        <Card className="border-white/10 bg-white shadow-2xl backdrop-blur-sm">
-          <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="text-2xl text-center font-bold text-slate-900">Iniciar Sesión</CardTitle>
-            <CardDescription className="text-center text-slate-500">
-              Ingresa tus credenciales para acceder a la plataforma
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-700">Correo Electrónico</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <Input 
-                    id="email" 
-                    placeholder="ejemplo@correo.com" 
-                    className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#0B7D99]" 
-                    required 
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-slate-700">Contraseña</Label>
-                  <Link href="#" className="text-xs text-[#0B7D99] hover:underline">
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="••••••••"
-                    className="pl-9 bg-slate-50 border-slate-200 focus-visible:ring-[#0B7D99]" 
-                    required 
-                  />
-                </div>
-              </div>
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-md mb-6 text-sm text-center border border-red-200">
+            {error}
+          </div>
+        )}
 
-              <Button 
-                type="submit" 
-                className="w-full bg-[#0B7D99] hover:bg-[#b00f60] text-white mt-6 h-12 text-base font-bold shadow-md shadow-[#d51375]/20" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Ingresando..." : "Entrar a DentaSync"}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-center border-t border-slate-100 pt-6 pb-6">
-            <p className="text-sm text-slate-500">
-              ¿No tienes cuenta? <Link href="#" className="text-[#d51375] hover:underline font-semibold">Regístrate o solicita acceso</Link>
-            </p>
-          </CardFooter>
-        </Card>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Correo Electrónico</Label>
+            <Input 
+              id="email" 
+              type="email" 
+              placeholder="ejemplo@dentasync.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required 
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Contraseña</Label>
+              <a href="#" className="text-sm text-[#39ACB8] hover:underline">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+            <Input 
+              id="password" 
+              type="password" 
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required 
+            />
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full bg-[#2651A3] hover:bg-[#1a3a75] text-white font-semibold py-2"
+            disabled={cargando}
+          >
+            {cargando ? "Iniciando sesión..." : "Iniciar Sesión"}
+          </Button>
+        </form>
+
       </div>
     </div>
-  )
+  );
 }

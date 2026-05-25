@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-// 1. Importamos el proveedor y el contenedor de la barra lateral
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-// 2. Importamos tu componente de la barra lateral
-import { ClinicSidebar } from '@/components/layout/ClinicSidebar';
+import MainLayout from '@/components/layout/MainLayout'; // <-- Importamos el nuevo envoltorio
 
 export const metadata: Metadata = {
   title: 'DentaSync',
@@ -26,19 +23,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased selection:bg-primary/10 selection:text-primary">
         
-        {/* 3. Envolvemos toda la app con el SidebarProvider */}
-        <SidebarProvider>
-          {/* Tu barra lateral fija */}
-          <ClinicSidebar />
-          
-          {/* SidebarInset asegura que el contenido de la derecha (children) no se pise con la barra */}
-          <SidebarInset className="flex w-full flex-col bg-[#F5F8FA]">
-            {/* Aquí es donde cambiarán las páginas (Pacientes, Agenda, etc.) */}
-            <main className="flex-1 overflow-auto">
-              {children}
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
+        {/* Aquí pasamos el contenido al envoltorio inteligente */}
+        <MainLayout>
+          {children}
+        </MainLayout>
 
         <Toaster />
       </body>
