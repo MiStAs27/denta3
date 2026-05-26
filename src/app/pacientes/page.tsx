@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore"; // Añadimos doc y deleteDoc
 import { db } from "@/lib/firebase";
@@ -21,13 +22,16 @@ import {
 } from "@/components/ui/table";
 import { Search, Pencil, Trash2, Plus } from "lucide-react";
 
+
 export default function PacientesPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
 
   // Estados para manejar cuál paciente está seleccionado y qué modal abrir
   const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(
     null,
   );
+  
   const [isDetalleOpen, setIsDetalleOpen] = useState(false);
   const [isNuevoOpen, setIsNuevoOpen] = useState(false);
   const [isEditarOpen, setIsEditarOpen] = useState(false); // Estado para abrir modal de editar
@@ -153,8 +157,8 @@ export default function PacientesPage() {
               pacientesFiltrados.map((paciente) => (
                 <TableRow
                   key={paciente.id}
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => abrirDetalle(paciente)}
+                  onClick={() => router.push(`/pacientes/${paciente.id}`)}
+                  className="cursor-pointer hover:bg-slate-50 transition-colors"
                 >
                   <TableCell className="font-medium text-[#2651A3]">
                     {paciente.nombre}
