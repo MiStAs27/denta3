@@ -16,3 +16,8 @@ ESTUDIANTES:
 SEMESTRE: 7mo Semestre 
 
 DOCENTE: M.Sc. Lic. Claudia Yañiquez 
+
+
+
+npm install firebase-admin
+npm install jspdf

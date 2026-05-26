@@ -5,48 +5,48 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter, usePathname } from "next/navigation";
-import { RolUsuario } from "@/types/roles";
 
-// Definimos cómo se ve nuestro usuario combinado (Firebase + Firestore)
-interface AppUser {
-  uid: string;
-  email: string | null;
-  rol: RolUsuario | null;
+// Extendemos el tipo de usuario para incluir el rol
+interface AuthUser extends User {
+  rol?: string;
 }
 
 interface AuthContextType {
-  user: AppUser | null;
+  user: AuthUser | null;
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+export const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(null);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Escuchamos cambios en la sesión de Firebase
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // El usuario inició sesión. Vamos a buscar su rol a Firestore.
+        // EL TRUCO: Cuando detecta sesión, va a Firestore y busca tu rol real
         try {
-          const userDoc = await getDoc(doc(db, "usuarios", firebaseUser.uid));
-          const rol = userDoc.exists() ? (userDoc.data().rol as RolUsuario) : null;
-
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            rol: rol,
-          });
+          const docRef = doc(db, "usuarios", firebaseUser.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            // Guardamos al usuario CON su rol
+            setUser({ ...firebaseUser, rol: userData.rol });
+          } else {
+            setUser(firebaseUser); // Si no hay documento, entra normal
+          }
         } catch (error) {
-          console.error("Error al obtener el rol del usuario:", error);
-          setUser({ uid: firebaseUser.uid, email: firebaseUser.email, rol: null });
+          console.error("Error al buscar rol del usuario:", error);
+          setUser(firebaseUser);
         }
       } else {
-        // No hay sesión activa
         setUser(null);
       }
       setLoading(false);
@@ -55,15 +55,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Proteger rutas privadas
   useEffect(() => {
     if (!loading) {
       const isPublicRoute = pathname === "/" || pathname === "/login";
+      const isSuperAdminRoute = pathname.startsWith("/super-admin");
+
       if (!user && !isPublicRoute) {
-        // Si no hay usuario y quiere entrar a una ruta privada, lo mandamos al login
+        // No hay sesión -> pa' fuera
         router.push("/login");
       } else if (user && isPublicRoute) {
-        // Si hay usuario y está en el login, lo mandamos al sistema
+        // Hay sesión y está en el login -> REDIRECCIÓN INTELIGENTE
+        if (user.rol === "SUPER_ADMIN") {
+          router.push("/super-admin");
+        } else {
+          router.push("/dashboard");
+        }
+      } else if (user && isSuperAdminRoute && user.rol !== "SUPER_ADMIN") {
+        // Es ruta de super admin pero el usuario no tiene el rol
+        alert("Acceso denegado: Área exclusiva de administración SaaS.");
         router.push("/dashboard");
       }
     }
@@ -74,6 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {!loading && children}
     </AuthContext.Provider>
   );
-}
+};
 
 export const useAuth = () => useContext(AuthContext);

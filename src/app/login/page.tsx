@@ -1,5 +1,7 @@
 "use client";
 
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase"; // Asegúrate de importar db
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -18,23 +20,35 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setCargando(true);
+    setError("");
 
     try {
-      // Intentamos iniciar sesión con Firebase
-      await signInWithEmailAndPassword(auth, email, password);
+      // 1. Iniciamos sesión en Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Si funciona, redirigimos al usuario al dashboard
-      router.push("/dashboard");
-    } catch (err: any) {
-      console.error("Error al iniciar sesión:", err);
-      // Mensajes de error amigables
-      if (err.code === 'auth/invalid-credential') {
-        setError("Correo o contraseña incorrectos.");
+      // 2. Buscamos el rol de esta persona en Firestore
+      const userDoc = await getDoc(doc(db, "usuarios", userCredential.user.uid));
+      
+      if (userDoc.exists()) {
+        const rolUsuario = userDoc.data().rol;
+        
+        // 3. ¡EL SEMÁFORO INTELIGENTE!
+        if (rolUsuario === "SUPER_ADMIN") {
+          // Si eres el dueño del software, te manda a tu centro de control oscuro
+          router.push("/super-admin");
+        } else {
+          // Si es secretaria, asistente o especialista, van a la clínica
+          router.push("/dashboard");
+        }
       } else {
-        setError("Ocurrió un error al intentar iniciar sesión.");
+        // Por si acaso el usuario no tiene documento en la base de datos
+        router.push("/dashboard"); 
       }
+      
+    } catch (error: any) {
+      console.error(error);
+      setError("Correo o contraseña incorrectos");
     } finally {
       setCargando(false);
     }

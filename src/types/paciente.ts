@@ -16,6 +16,7 @@ export interface Paciente {
   id?: string; // ID generado por Firebase Firestore
   nombre: string;
   ci: string;
+  saldoPendiente: number;
   domicilio: string;
   lugarTrabajo: string;
   fechaCreacion: string; // ISO String o Timestamp de Firebase

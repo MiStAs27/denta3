@@ -1,16 +1,18 @@
 // src/types/cita.ts
 
-export type EstadoCita = 'programada' | 'confirmada' | 'completada' | 'cancelada' | 'no_asistio';
+// 1. Agregamos 'pendiente' y 'reprogramada' a los estados permitidos
+export type EstadoCita = 'programada' | 'pendiente' | 'confirmada' | 'completada' | 'cancelada' | 'no_asistio' | 'reprogramada';
 
 export interface Cita {
   id?: string;
   pacienteId: string;
-  pacienteNombre: string; // Lo guardamos para no tener que buscar el paciente cada vez
-  especialistaId: string; // ID del doctor que atenderá
-  fecha: string; // Formato YYYY-MM-DD
-  horaInicio: string; // Formato HH:MM (ej. 14:30)
-  horaFin: string; // Formato HH:MM (ej. 15:00)
-  motivo: string; // Ej. "Limpieza", "Extracción", "Consulta inicial"
-  estado: EstadoCita;
+  pacienteNombre: string; 
+  especialistaId: string; 
+  fecha: string; 
+  horaInicio: string; 
+  horaFin: string; 
+  motivo: string; 
+  estado: EstadoCita; // Ahora TypeScript ya no marcará error aquí
   notasOpcionales?: string;
+  fechaReprogramada?: string; // Agregamos este campo que creamos en el paso anterior
 }
