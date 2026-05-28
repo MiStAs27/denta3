@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Cita } from "@/types/cita";
 
-import AgendaSidebar from "@/components/agenda/AgendaSidebar";
 import AgendaHeader from "@/components/agenda/AgendaHeader";
-import CalendarGrid from "@/components/agenda/CalendarGrid";
+import CalendarMonthView from "@/components/agenda/CalendarMonthView";
+import CalendarWeekView from "@/components/agenda/CalendarWeekView";
+import CalendarDayView from "@/components/agenda/CalendarDayView";
 import ModalNuevaCita from "@/components/agenda/ModalNuevaCita";
 import ModalEditarCita from "@/components/agenda/ModalEditarCita";
 
@@ -27,6 +28,7 @@ const ESPECIALISTAS = [
 
 export default function AgendaPage() {
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date>(new Date());
+  const [vista, setVista] = useState<'mes' | 'semana' | 'dia'>('mes');
   const [citasDelMes, setCitasDelMes] = useState<CitaUI[]>([]);
   const [cargando, setCargando] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function AgendaPage() {
     if (!fechaSeleccionada) return;
     setCargando(true);
     try {
-      // Calcular rango de fechas para el mes visible en la grilla
+      // Calcular rango de fechas amplio para que cubra la vista Mes y Semana
       const monthStart = startOfMonth(fechaSeleccionada);
       const monthEnd = endOfMonth(monthStart);
       const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -72,7 +74,6 @@ export default function AgendaPage() {
 
   useEffect(() => {
     buscarCitas();
-    // Dependemos de mes/año de fechaSeleccionada para no re-fetchear al cambiar de día en el mismo mes
   }, [format(fechaSeleccionada, 'yyyy-MM')]);
 
   const editarCita = (idCita: string) => {
@@ -82,38 +83,50 @@ export default function AgendaPage() {
 
   const handleDiaClick = (date: Date) => {
     setFechaSeleccionada(date);
-    // Opcional: setIsModalOpen(true); si queremos que al clickear el día se abra directo, 
-    // pero la UI tiene un botón "Nueva Cita". Dejaremos que actualice el día seleccionado.
+    if (vista === 'mes') {
+      setVista('dia');
+    }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-3.5rem)] md:h-screen w-full max-w-full bg-[#F5F8FA] overflow-hidden">
-      
-      {/* Sidebar Izquierdo Híbrido (Interno a la vista) */}
-      <AgendaSidebar 
+    <div className="flex-1 min-w-0 h-screen overflow-hidden flex flex-col bg-white">
+      <AgendaHeader 
         fechaSeleccionada={fechaSeleccionada}
         onFechaSeleccionada={setFechaSeleccionada}
+        vista={vista}
+        setVista={setVista}
         onNuevaCita={() => setIsModalOpen(true)}
       />
-
-      {/* Contenedor Principal Derecho */}
-      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
-        <AgendaHeader 
-          fechaSeleccionada={fechaSeleccionada}
-          onFechaSeleccionada={setFechaSeleccionada}
-        />
-        
-        {/* Contenedor fluido para la grilla */}
-        <div className="flex-1 p-0 md:p-4 overflow-hidden flex flex-col min-h-0">
-          <div className="flex-1 md:rounded-xl shadow-none md:shadow-sm border-0 md:border border-gray-100 overflow-hidden flex flex-col bg-white">
-            <CalendarGrid 
+      
+      {/* Contenedor fluido para la grilla */}
+      <div className="flex-1 p-4 overflow-hidden flex flex-col min-h-0 w-full min-w-0">
+        <div className="flex-1 rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col bg-white w-full min-w-0">
+          {vista === 'mes' && (
+            <CalendarMonthView 
               fechaSeleccionada={fechaSeleccionada}
               citas={citasDelMes}
               cargando={cargando}
               onDiaClick={handleDiaClick}
               onCitaClick={editarCita}
             />
-          </div>
+          )}
+          {vista === 'semana' && (
+            <CalendarWeekView 
+              fechaSeleccionada={fechaSeleccionada}
+              citas={citasDelMes}
+              cargando={cargando}
+              onDiaClick={handleDiaClick}
+              onCitaClick={editarCita}
+            />
+          )}
+          {vista === 'dia' && (
+            <CalendarDayView 
+              fechaSeleccionada={fechaSeleccionada}
+              citas={citasDelMes}
+              cargando={cargando}
+              onCitaClick={editarCita}
+            />
+          )}
         </div>
       </div>
 
