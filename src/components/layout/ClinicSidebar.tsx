@@ -30,9 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Vista General', href: '/dashboard', icon: LayoutDashboard }, // Sin permiso = visible para todos
   { name: 'Agenda', href: '/agenda', icon: Calendar, permisoRequerido: 'gestionar_agenda' },
   { name: 'Pacientes', href: '/pacientes', icon: Users, permisoRequerido: 'gestionar_pacientes' },
-  { name: 'Optimizador IA', href: '/ai-optimizer', icon: BrainCircuit, permisoRequerido: 'gestionar_agenda' },
-  { name: 'Asistente IA', href: '/concierge', icon: MessageSquare, permisoRequerido: 'gestionar_agenda' },
-  { name: 'Analíticas', href: '/analytics', icon: Activity, permisoRequerido: 'ver_reportes_financieros' },
+  { name: 'Informes y Reportes', href: '/analytics', icon: Activity, permisoRequerido: 'ver_reportes_financieros' },
   { name: 'Configuración', href: '/settings', icon: Settings, permisoRequerido: 'configurar_consultorio' },
 ]
 

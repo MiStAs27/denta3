@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -42,7 +43,7 @@ export default function PatientDetailPage() {
   const params = useParams();
   const patientId = params.id as string;
   const [patient, setPatient] = useState<any>(null);
-
+  const { user } = useAuth();
   const [tabActiva, setTabActiva] = useState("perfil");
   const { toast } = useToast();
 
@@ -174,15 +175,18 @@ export default function PatientDetailPage() {
     try {
       const costo = parseFloat(finanzasForm.costoTotal) || 0;
       const abonoInicial = parseFloat(finanzasForm.abonado) || 0;
-      
+
       // 1. PRIMERO: Creamos la nueva fila de deuda
-      const docRef = await addDoc(collection(db, "pacientes", patientId, "presupuestos"), {
-        tratamiento: finanzasForm.tratamiento,
-        costoTotal: costo,
-        abonado: abonoInicial,
-        saldoPendiente: costo - abonoInicial, // Inicialmente lo que falta
-        fecha: new Date().toISOString(),
-      });
+      const docRef = await addDoc(
+        collection(db, "pacientes", patientId, "presupuestos"),
+        {
+          tratamiento: finanzasForm.tratamiento,
+          costoTotal: costo,
+          abonado: abonoInicial,
+          saldoPendiente: costo - abonoInicial, // Inicialmente lo que falta
+          fecha: new Date().toISOString(),
+        },
+      );
 
       // 2. SEGUNDO: Si pagaste más de lo que cuesta (excedente),
       // o si tenías dinero de antes, el sistema lo distribuye automáticamente
@@ -191,14 +195,17 @@ export default function PatientDetailPage() {
         const excedente = abonoInicial - costo;
         // El excedente se reparte a otras deudas viejas
         await procesarPagoAutomatico(excedente);
-        
+
         // Ajustamos la fila recién creada para que quede en CERO (pagada)
         await updateDoc(docRef, { abonado: costo, saldoPendiente: 0 });
       }
 
       setFinanzasForm({ tratamiento: "", costoTotal: "", abonado: "" });
       setMostrandoFormularioFinanzas(false);
-      toast({ title: "Tratamiento registrado", description: "El saldo se distribuyó automáticamente." });
+      toast({
+        title: "Tratamiento registrado",
+        description: "El saldo se distribuyó automáticamente.",
+      });
     } finally {
       setGuardandoFinanzas(false);
     }
@@ -671,7 +678,7 @@ export default function PatientDetailPage() {
               <h2 className="text-xl font-bold text-slate-800">
                 Historial de Consultas
               </h2>
-              {!mostrandoFormularioEvo && (
+              {!mostrandoFormularioEvo && user?.rol !== "SECRETARIA" && (
                 <Button
                   className="bg-[#2651A3]"
                   onClick={() => setMostrandoFormularioEvo(true)}
@@ -745,7 +752,7 @@ export default function PatientDetailPage() {
               <h2 className="text-xl font-bold text-slate-800">
                 Recetario Electrónico
               </h2>
-              {!mostrandoFormularioReceta && (
+              {!mostrandoFormularioReceta && user?.rol !== "SECRETARIA" && (
                 <Button
                   className="bg-[#2651A3] hover:bg-[#1e4082]"
                   onClick={() => setMostrandoFormularioReceta(true)}

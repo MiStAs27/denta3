@@ -1,110 +1,229 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Activity, Calendar, Users, DollarSign, BarChart3 } from 'lucide-react'
+"use client";
 
-const KPIS = [
-  { label: 'Ingresos Mensuales', value: '$42,500', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-100' },
-  { label: 'Citas Confirmadas', value: '124', icon: Calendar, color: 'text-cyan-600', bg: 'bg-cyan-100' },
-  { label: 'Nuevos Pacientes', value: '32', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-  { label: 'Tasa de Ausentismo', value: '8.2%', icon: Activity, color: 'text-orange-600', bg: 'bg-orange-100' },
-]
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { 
+  BarChart3, Download, DollarSign, Users, 
+  TrendingUp, Activity, FileText, Loader2 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
-export default function AnalyticsPage() {
+export default function ReportesPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  const [cargando, setCargando] = useState(true);
+  const [datosReporte, setDatosReporte] = useState({
+    ingresosTotales: 0,
+    deudaTotal: 0,
+    totalPacientes: 0,
+    pacientesNuevosMes: 0,
+    tratamientosPopulares: [] as { nombre: string; cantidad: number }[],
+  });
+
+  useEffect(() => {
+    // Protección de ruta: Solo Admins pueden ver los reportes financieros
+    if (!authLoading && user?.rol !== 'TENANT_ADMIN' && user?.rol !== 'SUPER_ADMIN') {
+      alert("Acceso denegado: Solo los administradores pueden ver los reportes.");
+      router.push('/dashboard');
+      return;
+    }
+
+    const generarReportes = async () => {
+      if (!user) return;
+      
+      try {
+        const hoy = new Date();
+        const mesActual = hoy.getMonth();
+        const añoActual = hoy.getFullYear();
+
+        // 1. Analizar Pacientes
+        const pacientesSnap = await getDocs(collection(db, "pacientes"));
+        let deudaTotal = 0;
+        let pacientesNuevosMes = 0;
+        let totalPacientes = pacientesSnap.size;
+
+        pacientesSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data.saldoPendiente > 0) deudaTotal += data.saldoPendiente;
+          
+          if (data.fechaCreacion) {
+            const fechaDoc = new Date(data.fechaCreacion);
+            if (fechaDoc.getMonth() === mesActual && fechaDoc.getFullYear() === añoActual) {
+              pacientesNuevosMes++;
+            }
+          }
+        });
+
+        // 2. Analizar Finanzas y Tratamientos (Buscamos en las subcolecciones de cada paciente)
+        let ingresosTotales = 0;
+        const conteoTratamientos: Record<string, number> = {};
+
+        // Recorremos cada paciente para leer su historial de presupuestos
+        for (const pacienteDoc of pacientesSnap.docs) {
+          const presupuestosSnap = await getDocs(collection(db, "pacientes", pacienteDoc.id, "presupuestos"));
+          
+          presupuestosSnap.forEach((presupuestoDoc) => {
+            const presData = presupuestoDoc.data();
+            
+            // Sumar ingresos reales (dinero que ya entró)
+            if (presData.abonado) ingresosTotales += presData.abonado;
+
+            // Contar tratamientos para ver cuáles son los más vendidos
+            if (presData.tratamiento) {
+              const nombreTratamiento = presData.tratamiento.toUpperCase().trim();
+              conteoTratamientos[nombreTratamiento] = (conteoTratamientos[nombreTratamiento] || 0) + 1;
+            }
+          });
+        }
+
+        // Convertir el conteo de tratamientos a un array ordenado para el ranking
+        const rankingTratamientos = Object.entries(conteoTratamientos)
+          .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+          .sort((a, b) => b.cantidad - a.cantidad)
+          .slice(0, 5); // Tomamos el Top 5
+
+        setDatosReporte({
+          ingresosTotales,
+          deudaTotal,
+          totalPacientes,
+          pacientesNuevosMes,
+          tratamientosPopulares: rankingTratamientos,
+        });
+
+      } catch (error) {
+        console.error("Error generando reportes:", error);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    generarReportes();
+  }, [user, authLoading, router]);
+
+  const handleExportarPDF = () => {
+    alert("Función de exportar PDF en construcción...");
+    // Aquí implementaremos JS-PDF en el futuro
+  };
+
+  if (authLoading || cargando) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh] text-[#2651A3] gap-3">
+        <Loader2 className="w-10 h-10 animate-spin" />
+        <p className="font-bold">Procesando inteligencia de negocios...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in">
+      
+      {/* CABECERA */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">Analíticas Clínicas</h1>
-          <p className="text-muted-foreground mt-1">Monitorea el desempeño de la clínica y accede a indicadores clave.</p>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <BarChart3 className="text-[#39ACB8] w-6 h-6" /> Informes y Analíticas
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">Resumen del rendimiento financiero y clínico del consultorio.</p>
         </div>
-        <Button className="bg-primary text-white">Exportar Informe</Button>
+        <Button onClick={handleExportarPDF} className="bg-[#2651A3] hover:bg-[#1e4082]">
+          <Download className="w-4 h-4 mr-2" /> Exportar Resumen
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {KPIS.map((stat) => (
-          <Card key={stat.label} className="border-none shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={
-                  `p-3 rounded-xl ${stat.bg} text-xl ${stat.color}`
-                }>
-                  <stat.icon />
+      {/* MÉTRICAS FINANCIERAS PRINCIPALES */}
+      <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mt-8">
+        <DollarSign className="w-5 h-5 text-emerald-600" /> Rendimiento Financiero
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-emerald-50 border border-emerald-200 p-6 rounded-xl shadow-sm">
+          <p className="text-sm font-bold text-emerald-700 uppercase mb-1">Ingresos Totales (Recaudado)</p>
+          <h3 className="text-3xl font-bold text-emerald-800">Bs. {datosReporte.ingresosTotales.toFixed(2)}</h3>
+          <p className="text-xs text-emerald-600 mt-2">Dinero real ingresado por caja en tratamientos.</p>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 p-6 rounded-xl shadow-sm">
+          <p className="text-sm font-bold text-red-700 uppercase mb-1">Cuentas por Cobrar (Deuda en calle)</p>
+          <h3 className="text-3xl font-bold text-red-800">Bs. {datosReporte.deudaTotal.toFixed(2)}</h3>
+          <p className="text-xs text-red-600 mt-2">Suma total de saldos pendientes de todos los pacientes.</p>
+        </div>
+      </div>
+
+      {/* MÉTRICAS CLÍNICAS Y CRECIMIENTO */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6">
+        
+        {/* Crecimiento de Pacientes */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
+            <TrendingUp className="w-5 h-5 text-[#39ACB8]" /> Crecimiento de Pacientes
+          </h3>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-[#2651A3]">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">Pacientes Históricos</p>
+                  <p className="text-xs text-slate-500">Total registrados en el sistema</p>
                 </div>
               </div>
-              <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-              <h2 className="mt-3 text-3xl font-bold text-foreground">{stat.value}</h2>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Ingresos por Especialidad</CardTitle>
-            <CardDescription>Distribución de ingresos por tipo de servicio.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: 'Ortodoncia', value: '$11,300', progress: 72 },
-                { name: 'Endodoncia', value: '$8,450', progress: 54 },
-                { name: 'Limpieza', value: '$6,900', progress: 45 },
-              ].map((item) => (
-                <div key={item.name} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm font-medium text-foreground">
-                    <span>{item.name}</span>
-                    <span>{item.value}</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${item.progress}%` }} />
-                  </div>
+              <span className="text-2xl font-bold text-slate-800">{datosReporte.totalPacientes}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
+                  <Activity className="w-5 h-5" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Actividad Reciente</CardTitle>
-            <CardDescription>Resumen de eventos operativos recientes de la clínica.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              'Nueva cita confirmada para Paciente PAT-002 a las 11:30 AM.',
-              'Paciente PAT-005 completó su tratamiento de limpieza.',
-              'Se registró un nuevo paciente con historial de alergias.',
-              'Se canceló una cita sobre ortodoncia para mañana.',
-            ].map((event, index) => (
-              <div key={index} className="rounded-2xl border border-muted/60 bg-muted/50 p-4 text-sm text-foreground/90">
-                {event}
+                <div>
+                  <p className="font-bold text-slate-700">Pacientes Nuevos (Este mes)</p>
+                  <p className="text-xs text-slate-500">Adquisición reciente</p>
+                </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-none shadow-sm">
-        <CardHeader>
-          <CardTitle>Perspectivas de Uso</CardTitle>
-          <CardDescription>Datos de desempeño por doctor y agenda.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-muted/80 p-5 bg-white/90">
-              <p className="text-sm font-medium text-muted-foreground">Doctor con mayor carga</p>
-              <p className="mt-3 text-xl font-bold text-foreground">Dra. Mariana Ruiz</p>
-              <p className="text-sm text-muted-foreground mt-2">34 citas esta semana, 92% de ocupación.</p>
-            </div>
-            <div className="rounded-2xl border border-muted/80 p-5 bg-white/90">
-              <p className="text-sm font-medium text-muted-foreground">Hora más solicitada</p>
-              <p className="mt-3 text-xl font-bold text-foreground">10:00 - 11:00 AM</p>
-              <p className="text-sm text-muted-foreground mt-2">Mayor número de reservas y menor tasa de ausentismo.</p>
+              <span className="text-2xl font-bold text-emerald-600">+{datosReporte.pacientesNuevosMes}</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Ranking de Tratamientos */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
+            <FileText className="w-5 h-5 text-[#2651A3]" /> Top 5 Tratamientos más realizados
+          </h3>
+          <div className="space-y-4">
+            {datosReporte.tratamientosPopulares.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-4">No hay datos suficientes de tratamientos.</p>
+            ) : (
+              datosReporte.tratamientosPopulares.map((tratamiento, index) => {
+                // Cálculo de porcentaje para hacer la barra visual
+                const maxCantidad = datosReporte.tratamientosPopulares[0].cantidad;
+                const porcentaje = (tratamiento.cantidad / maxCantidad) * 100;
+                
+                return (
+                  <div key={index} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-bold text-slate-700">{index + 1}. {tratamiento.nombre}</span>
+                      <span className="font-medium text-slate-500">{tratamiento.cantidad} ventas</span>
+                    </div>
+                    {/* Barra de progreso visual nativa con Tailwind */}
+                    <div className="w-full bg-slate-100 rounded-full h-2">
+                      <div 
+                        className="bg-[#39ACB8] h-2 rounded-full transition-all duration-1000" 
+                        style={{ width: `${porcentaje}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+      </div>
     </div>
-  )
+  );
 }

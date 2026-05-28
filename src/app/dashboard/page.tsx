@@ -1,197 +1,238 @@
-"use client"
+"use client";
 
-import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { 
-  Users, 
-  Calendar, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle,
-  BrainCircuit
-} from 'lucide-react'
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell
-} from 'recharts'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+  Users, Calendar, CircleDollarSign, AlertCircle, 
+  TrendingUp, Activity, ArrowRight, Loader2
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
-const STATS = [
-  { label: 'Pacientes Activos', value: '1,284', change: '+12%', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-  { label: 'Citas Hoy', value: '24', change: '8 faltan', icon: Calendar, color: 'text-cyan-600', bg: 'bg-cyan-100' },
-  { label: 'Tasa de Retención', value: '94.2%', change: '+2.1%', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
-  { label: 'Tiempo de Espera Medio', value: '12 min', change: '-4 min', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
-]
+export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
-const PATIENT_FLOW_DATA = [
-  { name: 'Lun', count: 42 },
-  { name: 'Mar', count: 58 },
-  { name: 'Mie', count: 45 },
-  { name: 'Jue', count: 62 },
-  { name: 'Vie', count: 38 },
-  { name: 'Sab', count: 20 },
-]
+  // Estados reales para guardar los datos de Firebase
+  const [cargandoDatos, setCargandoDatos] = useState(true);
+  const [metricas, setMetricas] = useState({
+    citasHoy: 0,
+    pacientesNuevos: 0,
+    totalPorCobrar: 0,
+  });
+  
+  const [alertasCobro, setAlertasCobro] = useState<any[]>([]);
+  const [agendaHoy, setAgendaHoy] = useState<any[]>([]);
 
-const TREATMENT_DATA = [
-  { name: 'Limpieza', count: 45, color: 'hsl(var(--primary))' },
-  { name: 'Extracción', count: 12, color: 'hsl(var(--secondary))' },
-  { name: 'Orto', count: 28, color: 'hsl(var(--chart-3))' },
-  { name: 'Empaste', count: 35, color: 'hsl(var(--chart-4))' },
-]
+  // Función para traer los datos reales
+  useEffect(() => {
+    const cargarDatosReales = async () => {
+      if (!user) return;
+      
+      try {
+        const hoy = new Date();
+        const mesActual = hoy.getMonth();
+        const añoActual = hoy.getFullYear();
+        // Formato YYYY-MM-DD para buscar citas de hoy
+        const fechaHoyStr = hoy.toISOString().split('T')[0]; 
 
-export default function DashboardOverview() {
+        // 1. Analizar Pacientes (Para deudas y pacientes nuevos)
+        const pacientesSnapshot = await getDocs(collection(db, "pacientes"));
+        let totalDeudaCalculada = 0;
+        let nuevosEsteMesCalculado = 0;
+        const listaDeudores: any[] = [];
+
+        pacientesSnapshot.forEach((doc) => {
+          const data = doc.data();
+
+          // A. Sumar Deudas y llenar lista de Alertas
+          if (data.saldoPendiente && data.saldoPendiente > 0) {
+            totalDeudaCalculada += data.saldoPendiente;
+            listaDeudores.push({ 
+              id: doc.id, 
+              nombre: data.nombre, 
+              deuda: data.saldoPendiente,
+              celular: data.celular || 'S/N'
+            });
+          }
+
+          // B. Contar pacientes nuevos del mes
+          if (data.fechaCreacion) {
+            const fechaDoc = new Date(data.fechaCreacion);
+            if (fechaDoc.getMonth() === mesActual && fechaDoc.getFullYear() === añoActual) {
+              nuevosEsteMesCalculado++;
+            }
+          }
+        });
+
+        // Ordenar a los deudores para que salgan los que más deben primero
+        listaDeudores.sort((a, b) => b.deuda - a.deuda);
+
+        // 2. Traer Citas de Hoy (Busca en la colección 'citas')
+        const citasDelDia: any[] = [];
+        try {
+          const citasQuery = query(collection(db, "citas"), where("fecha", "==", fechaHoyStr));
+          const citasSnapshot = await getDocs(citasQuery);
+          citasSnapshot.forEach(doc => citasDelDia.push({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+          console.log("Nota: Aún no hay colección de citas o faltan registros hoy.");
+        }
+
+        // Guardar todo en los estados para que se dibuje en pantalla
+        setMetricas({
+          citasHoy: citasDelDia.length,
+          pacientesNuevos: nuevosEsteMesCalculado,
+          totalPorCobrar: totalDeudaCalculada
+        });
+        setAlertasCobro(listaDeudores.slice(0, 5)); // Solo mostramos los 5 mayores deudores
+        setAgendaHoy(citasDelDia);
+
+      } catch (error) {
+        console.error("Error cargando dashboard:", error);
+      } finally {
+        setCargandoDatos(false);
+      }
+    };
+
+    if (!authLoading) {
+      cargarDatosReales();
+    }
+  }, [user, authLoading]);
+
+
+  if (authLoading || cargandoDatos) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh] text-slate-500 gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-[#2651A3]" />
+        <p className="font-medium">Calculando métricas del consultorio...</p>
+      </div>
+    );
+  }
+
+  const esAdmin = user?.rol === 'TENANT_ADMIN' || user?.rol === 'SUPER_ADMIN';
+  const esSecretaria = user?.rol === 'SECRETARIA';
+  const esDoctor = user?.rol === 'DOCTOR';
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in">
+      
+      {/* 1. BIENVENIDA */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">Vista General de la Clínica</h1>
-          <p className="text-muted-foreground mt-1">Bienvenido de nuevo, Dr. Lopez. Esto es lo que está pasando hoy.</p>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Hola, {user?.displayName || user?.email?.split('@')[0] || 'Usuario'}
+          </h1>
+          <p className="text-slate-500 flex items-center gap-2 mt-1">
+            <span className="bg-[#2651A3] text-white px-2 py-0.5 rounded text-xs font-bold uppercase">
+              {user?.rol?.replace('_', ' ') || 'Sin Rol'}
+            </span>
+            Resumen en tiempo real
+          </p>
         </div>
-        <div className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-primary/20 cursor-pointer hover:bg-primary/90 transition-colors">
-          <CheckCircle2 size={18} />
-          <span className="text-sm font-semibold">Iniciar Turno de Mañana</span>
+        <Button onClick={() => router.push('/pacientes')} className="bg-[#39ACB8] hover:bg-[#2c8892]">
+          Ver Pacientes <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+
+      {/* 2. TARJETAS DE MÉTRICAS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-[#2651A3]">
+            <Calendar size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">Citas Hoy</p>
+            <h3 className="text-2xl font-bold text-slate-800">{metricas.citasHoy}</h3>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {STATS.map((stat) => (
-          <Card key={stat.label} className="border-none shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={cn("p-2 rounded-lg", stat.bg)}>
-                  <stat.icon className={cn("h-6 w-6", stat.color)} />
-                </div>
-                <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">{stat.change}</span>
-              </div>
-              <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-              <h3 className="text-2xl font-bold text-foreground mt-1">{stat.value}</h3>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Asistencia de Pacientes (Semana)</CardTitle>
-            <CardDescription>Visualización del flujo de pacientes en los últimos 6 días laborales.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={PATIENT_FLOW_DATA}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3} 
-                  dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "#fff" }}
-                  activeDot={{ r: 6 }} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Tratamientos Top</CardTitle>
-            <CardDescription>Servicios más solicitados este mes.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={TREATMENT_DATA} layout="vertical">
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} />
-                <Tooltip 
-                   cursor={{fill: 'transparent'}}
-                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {TREATMENT_DATA.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <Card className="border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Próximas Citas</CardTitle>
-                <CardDescription>Siguientes 3 pacientes en cola.</CardDescription>
-              </div>
-              <Button variant="outline" size="sm">Ver Todo</Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { name: 'Elena Gilbert', time: '10:30 AM', treatment: 'Seguimiento Invisalign', status: 'En Espera' },
-                { name: 'Stefan Salvatore', time: '11:15 AM', treatment: 'Terapia de Conducto', status: 'Confirmada' },
-                { name: 'Damon Salvatore', time: '12:00 PM', treatment: 'Limpieza Dental', status: 'Pendiente' },
-              ].map((patient, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary font-bold">
-                      {patient.name[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{patient.name}</p>
-                      <p className="text-xs text-muted-foreground">{patient.treatment}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-primary">{patient.time}</p>
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase">{patient.status}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-         </Card>
-
-         <Card className="bg-primary border-none shadow-xl text-white overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-8 opacity-10">
-              <BrainCircuit size={120} />
+        {(esAdmin || esDoctor) && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
+              <Users size={24} />
             </div>
-            <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <BrainCircuit size={20} className="text-secondary" />
-                <span className="text-xs font-bold tracking-widest uppercase">Optimizador de Espacios IA</span>
+            <div>
+              <p className="text-sm text-slate-500 font-medium">Pacientes Nuevos (Mes)</p>
+              <h3 className="text-2xl font-bold text-slate-800">{metricas.pacientesNuevos}</h3>
+            </div>
+          </div>
+        )}
+
+        {(esAdmin || esSecretaria) && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-red-100">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-red-600">
+                <CircleDollarSign size={24} />
               </div>
-              <CardTitle className="text-2xl text-white">Optimizar Agenda de Hoy</CardTitle>
-              <CardDescription className="text-white/70">Nuestra IA encontró 3 huecos que pueden llenarse para maximizar los ingresos.</CardDescription>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="bg-white/10 rounded-xl p-4 border border-white/20 backdrop-blur-sm">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="text-secondary shrink-0" size={18} />
-                  <p className="text-sm">Adelantar la limpieza de las 2:00 PM a la 1:30 PM para crear un espacio para una corona urgente.</p>
+              <div>
+                <p className="text-sm text-red-600 font-medium">Total en la calle (Por Cobrar)</p>
+                <h3 className="text-2xl font-bold text-red-700">Bs. {metricas.totalPorCobrar.toFixed(2)}</h3>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. MÓDULOS INFERIORES */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* AGENDA DEL DÍA (REAL) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-[#39ACB8]" /> Agenda de Hoy
+          </h2>
+          <div className="space-y-3 flex-1">
+            {agendaHoy.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-6">No hay citas registradas para hoy.</p>
+            ) : (
+              agendaHoy.map((cita) => (
+                <div key={cita.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center">
+                  <div>
+                    <p className="font-bold text-sm text-slate-800">{cita.hora} - {cita.pacienteNombre}</p>
+                    <p className="text-xs text-slate-500">{cita.motivo || 'Consulta General'}</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => router.push(`/pacientes/${cita.pacienteId}`)}>
+                    Atender
+                  </Button>
                 </div>
-              </div>
-              <Button className="w-full mt-6 bg-secondary hover:bg-secondary/90 text-white border-none">
-                Ejecutar Optimización
-              </Button>
-            </CardContent>
-         </Card>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ALERTAS DE COBRO REALES */}
+        {(esAdmin || esSecretaria) && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-100 flex flex-col h-full">
+            <h2 className="text-lg font-bold text-orange-700 mb-4 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" /> Top 5 Deudores
+            </h2>
+            <div className="space-y-3 flex-1">
+              {alertasCobro.length === 0 ? (
+                <p className="text-sm text-emerald-600 text-center py-6 font-medium">¡Felicidades! No hay deudas pendientes.</p>
+              ) : (
+                alertasCobro.map((deudor) => (
+                  <div key={deudor.id} className="p-3 bg-orange-50 rounded-lg border border-orange-100 flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-sm text-slate-800">{deudor.nombre}</p>
+                      <p className="text-xs text-slate-500">Cel: {deudor.celular}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-red-600 font-bold text-sm">Bs. {deudor.deuda.toFixed(2)}</p>
+                      <Button variant="link" size="sm" className="h-auto p-0 text-orange-700 text-xs mt-1" onClick={() => router.push(`/pacientes/${deudor.id}`)}>
+                        Ir a cobrar
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
-  )
+  );
 }

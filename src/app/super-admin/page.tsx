@@ -1,221 +1,381 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { collection, getDocs, query, where, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
+import {
+  ShieldAlert,
+  Building2,
+  Users,
+  CreditCard,
+  Settings,
+  Power,
+  Search,
+  MoreVertical,
+  Loader2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Building2, Activity, Users, DollarSign, Search, Power, PowerOff, ExternalLink } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-// Interfaz para el modelo de negocio (Tenant)
-interface ClinicaSaaS {
-  id: string;
-  nombre: string;
-  titular: string;
-  emailContacto: string;
-  plan: "GRATUITO" | "PRO" | "PREMIUM";
-  estado: "ACTIVA" | "SUSPENDIDA";
-  fechaRegistro: string;
-  pacientesActuales: number;
-}
+import { useToast } from "@/hooks/use-toast";
 
 export default function SuperAdminDashboard() {
-  const [clinicas, setClinicas] = useState<ClinicaSaaS[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [busqueda, setBusqueda] = useState("");
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const cargarClinicas = async () => {
-    setCargando(true);
+  const [cargando, setCargando] = useState(true);
+  const [metricas, setMetricas] = useState({
+    totalClinicas: 0,
+    totalUsuarios: 0,
+    ingresosSaaS: 0,
+  });
+
+  const [clinicas, setClinicas] = useState<any[]>([]);
+
+  // --- ESTADOS PARA NUEVA CLÍNICA ---
+  const [mostrandoModal, setMostrandoModal] = useState(false);
+  const [guardandoClinica, setGuardandoClinica] = useState(false);
+  const [nuevaClinicaForm, setNuevaClinicaForm] = useState({
+    nombreAdmin: "",
+    email: "",
+    nombreClinica: "",
+    password: "", // Nota: En producción, la contraseña se maneja con Firebase Admin
+  });
+
+  const cargarDatosSaaS = async () => {
+    if (!user) return;
+
     try {
-      // En el futuro leerá de tu colección real "clinicas"
-      // const querySnapshot = await getDocs(collection(db, "clinicas"));
-      
-      // Por ahora simularemos datos para que veas el poder del panel SaaS
-      const clinicasSimuladas: ClinicaSaaS[] = [
-        { id: "tenant_1", nombre: "DentaSync La Paz", titular: "Dr. Carlos Ruiz", emailContacto: "cruiz@dentasync.com", plan: "PRO", estado: "ACTIVA", fechaRegistro: "2026-01-15", pacientesActuales: 850 },
-        { id: "tenant_2", nombre: "Sonrisas Blancas", titular: "Dra. Ana López", emailContacto: "ana@sonrisas.com", plan: "GRATUITO", estado: "ACTIVA", fechaRegistro: "2026-03-20", pacientesActuales: 120 },
-        { id: "tenant_3", nombre: "Odontología Express", titular: "Dr. Mario Vargas", emailContacto: "admin@odoexpress.com", plan: "PREMIUM", estado: "SUSPENDIDA", fechaRegistro: "2025-11-05", pacientesActuales: 3400 },
-      ];
-      
-      setClinicas(clinicasSimuladas);
+      const usuariosSnap = await getDocs(collection(db, "usuarios"));
+      const totalUsers = usuariosSnap.size;
+
+      const clinicasQuery = query(
+        collection(db, "usuarios"),
+        where("rol", "==", "TENANT_ADMIN"),
+      );
+      const clinicasSnap = await getDocs(clinicasQuery);
+
+      const listaClinicas: any[] = [];
+      clinicasSnap.forEach((doc) => {
+        const data = doc.data();
+        listaClinicas.push({
+          id: doc.id,
+          nombreAdmin: data.nombre || data.displayName || "Sin nombre",
+          email: data.email,
+          clinica: data.nombreClinica || "Clínica Principal",
+          estado: data.estado || "Activo",
+          fechaRegistro: data.fechaCreacion || new Date().toISOString(),
+        });
+      });
+
+      setMetricas({
+        totalClinicas: listaClinicas.length,
+        totalUsuarios: totalUsers,
+        ingresosSaaS: listaClinicas.length * 50, // 50 USD por suscripción
+      });
+
+      setClinicas(listaClinicas);
     } catch (error) {
-      console.error("Error al cargar clínicas:", error);
+      console.error("Error cargando datos:", error);
     } finally {
       setCargando(false);
     }
   };
 
   useEffect(() => {
-    cargarClinicas();
-  }, []);
+    if (!authLoading && user?.rol !== "SUPER_ADMIN") {
+      router.push("/dashboard");
+      return;
+    }
+    cargarDatosSaaS();
+  }, [user, authLoading, router]);
 
-  const alternarEstadoClinica = async (id: string, estadoActual: string) => {
-    const nuevoEstado = estadoActual === "ACTIVA" ? "SUSPENDIDA" : "ACTIVA";
-    const accion = nuevoEstado === "SUSPENDIDA" ? "suspender" : "reactivar";
-    
-    if (window.confirm(`¿Estás seguro que deseas ${accion} esta clínica?`)) {
-      // Aquí iría el código real para actualizar Firebase:
-      // await updateDoc(doc(db, "clinicas", id), { estado: nuevoEstado });
-      
-      // Actualizamos el estado local para ver el cambio visual
-      setClinicas(clinicas.map(c => c.id === id ? { ...c, estado: nuevoEstado } : c));
-      alert(`Clínica ${nuevoEstado.toLowerCase()} exitosamente.`);
+  // --- FUNCIÓN PARA CREAR NUEVA CLÍNICA ---
+  const crearNuevaClinica = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nuevaClinicaForm.email || !nuevaClinicaForm.nombreAdmin) return;
+    setGuardandoClinica(true);
+
+    try {
+      // 1. Guardamos el perfil del nuevo Administrador de Clínica en Firestore
+      await addDoc(collection(db, "usuarios"), {
+        email: nuevaClinicaForm.email.toLowerCase(),
+        nombre: nuevaClinicaForm.nombreAdmin,
+        nombreClinica: nuevaClinicaForm.nombreClinica,
+        rol: "TENANT_ADMIN",
+        estado: "Activo",
+        fechaCreacion: new Date().toISOString(),
+      });
+
+      toast({
+        title: "¡Clínica creada con éxito!",
+        description: `El administrador ${nuevaClinicaForm.nombreAdmin} ya tiene acceso.`,
+      });
+
+      // Limpiamos el formulario y cerramos modal
+      setNuevaClinicaForm({
+        nombreAdmin: "",
+        email: "",
+        nombreClinica: "",
+        password: "",
+      });
+      setMostrandoModal(false);
+
+      // Recargamos la tabla para ver al nuevo cliente
+      cargarDatosSaaS();
+    } catch (error) {
+      console.error("Error al crear clínica:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear la clínica.",
+        variant: "destructive",
+      });
+    } finally {
+      setGuardandoClinica(false);
     }
   };
 
-  const clinicasFiltradas = clinicas.filter(c => 
-    c.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-    c.titular.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  if (authLoading || cargando) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white gap-3">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+        <p className="font-bold">Iniciando Consola de Super Administrador...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0F172A] p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* HEADER SUPER ADMIN (Modo Oscuro para diferenciarlo del resto del sistema) */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Activity className="text-emerald-400 w-8 h-8" />
-              SaaS Central Control
-            </h1>
-            <p className="text-slate-400 mt-1">Gestión global de inquilinos (Tenants) y suscripciones.</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 flex items-center gap-3">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-              </span>
-              <span className="text-sm font-semibold text-slate-300">Sistema Operativo</span>
+    <div className="min-h-screen bg-slate-50 p-6 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in relative">
+        {/* CABECERA SUPER ADMIN */}
+        <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400">
+              <ShieldAlert size={32} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Consola SaaS Maestro</h1>
+              <p className="text-slate-400 text-sm mt-1">
+                Gestión global de la plataforma DentaSync
+              </p>
             </div>
           </div>
         </div>
 
-        {/* MÉTRICAS GLOBALES (KPIs) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-slate-800/50 border border-slate-700 p-5 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-400">Total Clínicas</span>
-              <Building2 className="text-blue-400 w-5 h-5" />
+        {/* MÉTRICAS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+              <Building2 size={24} />
             </div>
-            <span className="text-3xl font-bold text-white">{clinicas.length}</span>
+            <div>
+              <p className="text-sm text-slate-500 font-medium">
+                Clínicas Activas
+              </p>
+              <h3 className="text-2xl font-bold text-slate-800">
+                {metricas.totalClinicas}
+              </h3>
+            </div>
           </div>
-          
-          <div className="bg-slate-800/50 border border-slate-700 p-5 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-400">Pacientes Globales</span>
-              <Users className="text-purple-400 w-5 h-5" />
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+              <Users size={24} />
             </div>
-            <span className="text-3xl font-bold text-white">
-              {clinicas.reduce((acc, curr) => acc + curr.pacientesActuales, 0).toLocaleString()}
-            </span>
+            <div>
+              <p className="text-sm text-slate-500 font-medium">
+                Usuarios Globales
+              </p>
+              <h3 className="text-2xl font-bold text-slate-800">
+                {metricas.totalUsuarios}
+              </h3>
+            </div>
           </div>
-
-          <div className="bg-slate-800/50 border border-slate-700 p-5 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-400">MRR (Ingreso Mensual)</span>
-              <DollarSign className="text-emerald-400 w-5 h-5" />
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+              <CreditCard size={24} />
             </div>
-            <span className="text-3xl font-bold text-white">$450.00</span>
-          </div>
-
-          <div className="bg-slate-800/50 border border-slate-700 p-5 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-400">Tasa de Suspensión</span>
-              <PowerOff className="text-red-400 w-5 h-5" />
+            <div>
+              <p className="text-sm text-slate-500 font-medium">
+                Ingresos (MRR)
+              </p>
+              <h3 className="text-2xl font-bold text-slate-800">
+                ${metricas.ingresosSaaS.toFixed(2)}
+              </h3>
             </div>
-            <span className="text-3xl font-bold text-white">
-              {Math.round((clinicas.filter(c => c.estado === 'SUSPENDIDA').length / clinicas.length) * 100)}%
-            </span>
           </div>
         </div>
 
-        {/* TABLA DE CLÍNICAS (TENANTS) */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden flex flex-col min-h-[500px]">
-          
-          <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
-            <h2 className="text-lg font-bold text-white">Consultorios Registrados</h2>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input 
-                placeholder="Buscar clínica..." 
-                className="pl-9 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 focus-visible:ring-emerald-500"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
+        {/* DIRECTORIO DE CLÍNICAS */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h2 className="text-lg font-bold text-slate-800">
+              Directorio de Clínicas
+            </h2>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                onClick={() => setMostrandoModal(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto"
+              >
+                + Nueva Clínica
+              </Button>
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="w-full min-w-[800px]">
-              
-              {/* Encabezados */}
-              <div className="grid grid-cols-12 gap-4 p-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 bg-slate-900/50">
-                <div className="col-span-3">Clínica / Tenant</div>
-                <div className="col-span-3">Titular y Contacto</div>
-                <div className="col-span-2 text-center">Plan</div>
-                <div className="col-span-2 text-center">Estado</div>
-                <div className="col-span-2 text-right">Acciones</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-600 uppercase font-bold text-xs">
+                <tr>
+                  <th className="px-6 py-4">Clínica / Administrador</th>
+                  <th className="px-6 py-4">Fecha de Alta</th>
+                  <th className="px-6 py-4">Estado</th>
+                  <th className="px-6 py-4 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {clinicas.map((clinica) => (
+                  <tr key={clinica.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-slate-800">
+                        {clinica.clinica}
+                      </p>
+                      <p className="text-slate-500 text-xs">
+                        Admin: {clinica.nombreAdmin} ({clinica.email})
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-slate-500">
+                      {new Date(clinica.fechaRegistro).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-emerald-100 text-emerald-700">
+                        {clinica.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        title="Suspender"
+                      >
+                        <Power className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* --- MODAL CREAR NUEVA CLÍNICA --- */}
+        {mostrandoModal && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 className="text-xl font-bold text-slate-800">
+                  Alta de Nueva Clínica
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMostrandoModal(false)}
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </Button>
               </div>
 
-              {/* Lista */}
-              {clinicasFiltradas.map((clinica) => (
-                <div key={clinica.id} className="grid grid-cols-12 gap-4 p-4 items-center border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
-                  
-                  <div className="col-span-3">
-                    <p className="font-bold text-slate-200">{clinica.nombre}</p>
-                    <p className="text-xs text-slate-500 font-mono mt-1">ID: {clinica.id}</p>
-                  </div>
-
-                  <div className="col-span-3">
-                    <p className="text-sm font-medium text-slate-300">{clinica.titular}</p>
-                    <p className="text-xs text-slate-500">{clinica.emailContacto}</p>
-                  </div>
-
-                  <div className="col-span-2 flex justify-center">
-                    <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider border 
-                      ${clinica.plan === 'PREMIUM' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 
-                        clinica.plan === 'PRO' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
-                        'bg-slate-500/10 text-slate-400 border-slate-500/20'}
-                    `}>
-                      {clinica.plan} ({clinica.pacientesActuales} pac.)
-                    </span>
-                  </div>
-
-                  <div className="col-span-2 flex justify-center">
-                    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border 
-                      ${clinica.estado === 'ACTIVA' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}
-                    `}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${clinica.estado === 'ACTIVA' ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
-                      {clinica.estado}
-                    </span>
-                  </div>
-
-                  <div className="col-span-2 flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-slate-700" title="Ver detalles (Próximamente)">
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={clinica.estado === 'ACTIVA' ? 'text-red-400 hover:text-red-300 hover:bg-red-400/10' : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10'} 
-                      title={clinica.estado === 'ACTIVA' ? 'Suspender servicio' : 'Reactivar servicio'}
-                      onClick={() => alternarEstadoClinica(clinica.id, clinica.estado)}
-                    >
-                      {clinica.estado === 'ACTIVA' ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                    </Button>
-                  </div>
-
+              <form onSubmit={crearNuevaClinica} className="p-6 space-y-4">
+                <div>
+                  <Label className="font-bold text-slate-700">
+                    Nombre de la Clínica
+                  </Label>
+                  <Input
+                    placeholder="Ej. OdontoCenter"
+                    value={nuevaClinicaForm.nombreClinica}
+                    onChange={(e: any) =>
+                      setNuevaClinicaForm({
+                        ...nuevaClinicaForm,
+                        nombreClinica: e.target.value,
+                      })
+                    }
+                    required
+                  />
                 </div>
-              ))}
+                <div>
+                  <Label className="font-bold text-slate-700">
+                    Nombre del Dr. / Administrador
+                  </Label>
+                  <Input
+                    placeholder="Ej. Dr. Carlos Ruiz"
+                    value={nuevaClinicaForm.nombreAdmin}
+                    onChange={(e: any) =>
+                      setNuevaClinicaForm({
+                        ...nuevaClinicaForm,
+                        nombreAdmin: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="font-bold text-slate-700">
+                    Correo Electrónico (Para Login)
+                  </Label>
+                  <Input
+                    type="email"
+                    placeholder="dr.carlos@email.com"
+                    value={nuevaClinicaForm.email}
+                    onChange={(e: any) =>
+                      setNuevaClinicaForm({
+                        ...nuevaClinicaForm,
+                        email: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="font-bold text-slate-700">
+                    Contraseña Inicial
+                  </Label>
+                  <Input
+                    type="password"
+                    placeholder="Min. 6 caracteres"
+                    value={nuevaClinicaForm.password}
+                    onChange={(e: any) =>
+                      setNuevaClinicaForm({
+                        ...nuevaClinicaForm,
+                        password: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
 
+                <div className="pt-4 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setMostrandoModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                    disabled={guardandoClinica}
+                  >
+                    {guardandoClinica ? "Creando..." : "Crear Clínica"}
+                  </Button>
+                </div>
+              </form>
             </div>
-          </ScrollArea>
-        </div>
-
+          </div>
+        )}
       </div>
     </div>
   );
