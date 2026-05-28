@@ -28,13 +28,21 @@ export default function AgendaHeader({
   const hoy = () => onFechaSeleccionada(new Date());
 
   return (
-    <header className="w-full min-w-0 flex flex-col sm:flex-row items-center justify-between px-4 md:px-6 py-2 sm:h-16 bg-white border-b border-slate-100 gap-2 shrink-0 overflow-hidden">
-      
+    <header className="w-full min-w-0 flex flex-col sm:flex-row items-center justify-between px-4 md:px-6 py-2 sm:h-16 bg-[#f8fafc] border-b border-slate-100 gap-2 shrink-0 overflow-hidden">
+      <style>{`
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+          50% { transform: scale(1.03); box-shadow: 0 4px 6px -1px rgb(38 81 163 / 0.2); }
+        }
+        .btn-breathe { animation: breathe 3s ease-in-out infinite; }
+        .btn-breathe:hover { animation: none; transform: scale(1.02); }
+      `}</style>
+
       {/* Izquierda: Buscador y Botón Nueva Cita */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
         <Button 
           onClick={onNuevaCita} 
-          className="shrink-0 bg-[#2651A3] hover:bg-[#1e4082] text-white shadow-sm transition-all rounded-lg flex gap-1.5 items-center justify-center font-bold text-sm h-9 px-4"
+          className="btn-breathe shrink-0 bg-[#2651A3] hover:bg-[#1e4082] text-white transition-all rounded-lg flex gap-1.5 items-center justify-center font-bold text-sm h-9 px-4"
         >
           <Plus className="w-4 h-4" />
           Nueva Cita
@@ -46,34 +54,36 @@ export default function AgendaHeader({
           <Input 
             type="text" 
             placeholder="Buscar paciente..." 
-            className="pl-9 bg-slate-50/50 border-slate-200 focus-visible:ring-[#2651A3] rounded-lg shadow-sm text-sm h-9"
+            className="pl-9 bg-white border-slate-200 focus-visible:ring-[#2651A3] rounded-lg shadow-sm text-sm h-9"
           />
         </div>
       </div>
 
       {/* Centro: Controles de Navegación del Mes */}
-      <div className="flex items-center gap-2 sm:gap-4 shrink-0 justify-center">
-        <Button variant="outline" size="sm" onClick={hoy} className="font-bold text-slate-600 rounded-lg px-4 h-9 shadow-sm border-slate-200 hover:bg-slate-50">
+      <div className="flex items-center gap-3 sm:gap-5 shrink-0 justify-center">
+        <Button onClick={hoy} className="font-bold bg-[#2651A3] hover:bg-[#1e4082] text-white transition-colors rounded-lg px-4 h-9 shadow-sm">
           Hoy
         </Button>
-        <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-100 shadow-sm">
-          <Button variant="ghost" size="icon" onClick={mesAnterior} className="h-7 w-7 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-500">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={mesSiguiente} className="h-7 w-7 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-500">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 capitalize text-center truncate px-1">
+            {format(fechaSeleccionada, "MMMM yyyy", { locale: es })}
+          </h2>
+          <div className="flex items-center gap-0.5 bg-white p-0.5 rounded-lg border border-slate-200 shadow-sm">
+            <Button variant="ghost" size="icon" onClick={mesAnterior} className="h-7 w-7 rounded-md hover:bg-slate-50 hover:shadow-sm transition-all text-slate-500">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={mesSiguiente} className="h-7 w-7 rounded-md hover:bg-slate-50 hover:shadow-sm transition-all text-slate-500">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <h2 className="text-lg sm:text-xl font-bold text-slate-800 capitalize text-center truncate px-2">
-          {format(fechaSeleccionada, "MMMM yyyy", { locale: es })}
-        </h2>
       </div>
 
       {/* Derecha: Vistas, Notificaciones, Usuario */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0 justify-end">
         
         {/* Selectores de vista */}
-        <div className="hidden lg:flex bg-slate-50 p-1 rounded-lg border border-slate-100 shadow-sm gap-1">
+        <div className="hidden lg:flex bg-slate-200/50 p-1 rounded-lg border border-slate-100 shadow-inner gap-1">
           <Button 
             variant="ghost" 
             size="sm" 
