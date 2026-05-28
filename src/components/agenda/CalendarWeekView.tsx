@@ -40,7 +40,7 @@ export default function CalendarWeekView({
   return (
     <div className="w-full flex-1 min-w-0 overflow-hidden flex flex-col bg-white h-full min-h-0">
       {/* Cabecera de días de la semana */}
-      <div className="grid grid-cols-7 border-b border-gray-100 bg-white shrink-0">
+      <div className="w-full min-w-0 grid grid-cols-7 border-b border-gray-100 bg-white shrink-0 overflow-hidden">
         {diasSemana.map((dia, i) => {
           const esHoy = isSameDay(dia, new Date());
           const isSelected = isSameDay(dia, fechaSeleccionada);

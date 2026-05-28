@@ -42,9 +42,9 @@ export default function CalendarMonthView({
   const totalSemanas = diasDelCalendario.length / 7;
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 bg-white w-full">
+    <div className="w-full flex-1 min-w-0 overflow-hidden flex flex-col bg-white h-full min-h-0">
       {/* Cabecera de días de la semana */}
-      <div className="grid grid-cols-7 border-b border-gray-100 bg-white shrink-0">
+      <div className="w-full min-w-0 grid grid-cols-7 border-b border-gray-100 bg-white shrink-0 overflow-hidden">
         {diasSemana.map((dia, i) => (
           <div key={i} className="py-2 text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">
             {dia}
@@ -61,7 +61,7 @@ export default function CalendarMonthView({
           </div>
         </div>
       ) : (
-        <div className={`w-full flex-1 min-h-0 grid grid-cols-7 ${totalSemanas === 6 ? 'grid-rows-6' : 'grid-rows-5'} gap-[1px] bg-slate-200`}>
+        <div className={`w-full min-w-0 flex-1 min-h-0 grid grid-cols-7 ${totalSemanas === 6 ? 'grid-rows-6' : 'grid-rows-5'} gap-[1px] bg-slate-200 overflow-hidden`}>
           {diasDelCalendario.map((dia, idx) => {
             const strDia = format(dia, 'yyyy-MM-dd');
             const citasDelDia = citas.filter(c => c.fecha === strDia).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));

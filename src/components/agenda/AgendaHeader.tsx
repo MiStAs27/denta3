@@ -28,10 +28,10 @@ export default function AgendaHeader({
   const hoy = () => onFechaSeleccionada(new Date());
 
   return (
-    <header className="flex flex-col sm:flex-row items-center justify-between px-6 py-2 sm:h-16 bg-white border-b border-slate-100 gap-4 shrink-0 overflow-hidden">
+    <header className="w-full min-w-0 flex flex-col sm:flex-row items-center justify-between px-4 md:px-6 py-2 sm:h-16 bg-white border-b border-slate-100 gap-2 shrink-0 overflow-hidden">
       
       {/* Izquierda: Buscador y Botón Nueva Cita */}
-      <div className="flex items-center gap-3 w-full sm:w-auto">
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
         <Button 
           onClick={onNuevaCita} 
           className="shrink-0 bg-[#2651A3] hover:bg-[#1e4082] text-white shadow-sm transition-all rounded-lg flex gap-1.5 items-center justify-center font-bold text-sm h-9 px-4"
@@ -39,7 +39,7 @@ export default function AgendaHeader({
           <Plus className="w-4 h-4" />
           Nueva Cita
         </Button>
-        <div className="relative flex-1 sm:w-64 lg:w-80">
+        <div className="relative flex-1 w-full max-w-[200px] sm:max-w-xs min-w-0">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-slate-400" />
           </div>
@@ -52,7 +52,7 @@ export default function AgendaHeader({
       </div>
 
       {/* Centro: Controles de Navegación del Mes */}
-      <div className="flex items-center gap-2 sm:gap-4 order-last sm:order-none w-full sm:w-auto justify-between sm:justify-center">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0 justify-center">
         <Button variant="outline" size="sm" onClick={hoy} className="font-bold text-slate-600 rounded-lg px-4 h-9 shadow-sm border-slate-200 hover:bg-slate-50">
           Hoy
         </Button>
@@ -64,13 +64,13 @@ export default function AgendaHeader({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <h2 className="text-xl font-bold text-slate-800 capitalize min-w-[140px] text-center">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-800 capitalize text-center truncate px-2">
           {format(fechaSeleccionada, "MMMM yyyy", { locale: es })}
         </h2>
       </div>
 
       {/* Derecha: Vistas, Notificaciones, Usuario */}
-      <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0 justify-end">
         
         {/* Selectores de vista */}
         <div className="hidden lg:flex bg-slate-50 p-1 rounded-lg border border-slate-100 shadow-sm gap-1">
