@@ -36,8 +36,9 @@ export default function ModalEditarCita({ isOpen, onClose, cita, onCitaActualiza
       setHoraInicio(cita.horaInicio);
       setHoraFin(cita.horaFin);
       setMotivo(cita.motivo);
-      // Si la cita antigua decía "programada", la pasamos a la nueva nomenclatura "pendiente"
-      setEstado(cita.estado === "programada" ? "pendiente" : cita.estado);
+      // Inicialización robusta: Si no hay estado o dice "programada", forzamos "pendiente"
+      const estadoCrudo = cita.estado ? cita.estado.toLowerCase().trim() : "pendiente";
+      setEstado(estadoCrudo === "programada" ? "pendiente" : estadoCrudo);
       setNuevaFecha(""); // Limpiamos campos de reprogramación
       setNuevaHora(cita.horaInicio);
     }
@@ -111,6 +112,7 @@ export default function ModalEditarCita({ isOpen, onClose, cita, onCitaActualiza
               value={estado}
               onChange={(e) => setEstado(e.target.value)}
             >
+              <option value="pendiente">Pendiente</option>
               <option value="confirmada">Confirmada</option>
               <option value="reprogramada">Reprogramar</option>
               <option value="cancelada">Cancelada</option>

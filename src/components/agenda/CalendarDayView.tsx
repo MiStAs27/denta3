@@ -3,7 +3,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { determinarColorPorMotivo } from "@/lib/agenda-constants";
+import { determinarColorPorEstado } from "@/lib/agenda-constants";
 import { Clock, User } from "lucide-react";
 
 interface CitaExtendida {
@@ -68,14 +68,14 @@ export default function CalendarDayView({
               </div>
             ) : (
               citasDelDia.map((cita) => {
-                const tipo = determinarColorPorMotivo(cita.motivo);
-                const inactiva = cita.estado === 'cancelada' || cita.estado === 'reprogramada';
+                const estiloClases = determinarColorPorEstado(cita.estado);
+                const inactiva = cita.estado && (cita.estado.toLowerCase() === 'cancelada' || cita.estado.toLowerCase() === 'reprogramada');
                 
                 return (
                   <div 
                     key={cita.id}
                     onClick={(e) => { e.stopPropagation(); onCitaClick(cita.id); }}
-                    className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 px-6 py-4 rounded-xl cursor-pointer transition-transform hover:scale-[1.01] shadow-sm border border-slate-200/60 bg-white ${inactiva ? 'opacity-60 grayscale' : ''}`}
+                    className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 px-6 py-4 rounded-xl cursor-pointer transition-transform hover:scale-[1.01] shadow-sm border border-slate-200/60 ${estiloClases} ${inactiva ? 'opacity-60 grayscale' : ''}`}
                   >
                     <div className="flex flex-col items-center justify-center w-20 shrink-0">
                       <span className="text-lg font-bold text-slate-800">{cita.horaInicio}</span>
@@ -89,7 +89,7 @@ export default function CalendarDayView({
                         {cita.pacienteNombre}
                       </h4>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tipo.bg} ${tipo.text}`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/50 border border-slate-200/50 text-slate-600`}>
                           {cita.motivo}
                         </span>
                         <span className="inline-flex items-center text-xs text-slate-500 font-medium">
@@ -100,12 +100,8 @@ export default function CalendarDayView({
                     </div>
 
                     <div className="shrink-0">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                        cita.estado === 'completada' ? 'bg-green-50 text-green-700 border-green-200' : 
-                        cita.estado === 'pendiente' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
-                        'bg-slate-100 text-slate-600 border-slate-200'
-                      }`}>
-                        {cita.estado.charAt(0).toUpperCase() + cita.estado.slice(1)}
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${estiloClases}`}>
+                        {cita.estado ? cita.estado.charAt(0).toUpperCase() + cita.estado.slice(1) : 'Pendiente'}
                       </span>
                     </div>
                   </div>

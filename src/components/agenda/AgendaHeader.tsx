@@ -1,12 +1,11 @@
 "use client";
 
 import React from "react";
-import { Search, Bell, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AgendaHeaderProps {
   fechaSeleccionada: Date;
@@ -38,7 +37,7 @@ export default function AgendaHeader({
         .btn-breathe:hover { animation: none; transform: scale(1.02); }
       `}</style>
 
-      {/* Izquierda: Buscador y Botón Nueva Cita */}
+      {/* Izquierda: Botón Nueva Cita y Leyenda */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
         <Button 
           onClick={onNuevaCita} 
@@ -47,15 +46,25 @@ export default function AgendaHeader({
           <Plus className="w-4 h-4" />
           Nueva Cita
         </Button>
-        <div className="relative flex-1 w-full max-w-[200px] sm:max-w-xs min-w-0">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-slate-400" />
+
+        {/* Leyenda de Estados */}
+        <div className="hidden xl:flex items-center gap-4 ml-6">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
+            <span className="text-xs font-medium text-slate-500">Pendiente</span>
           </div>
-          <Input 
-            type="text" 
-            placeholder="Buscar paciente..." 
-            className="pl-9 bg-white border-slate-200 focus-visible:ring-[#2651A3] rounded-lg shadow-sm text-sm h-9"
-          />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+            <span className="text-xs font-medium text-slate-500">Confirmada</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+            <span className="text-xs font-medium text-slate-500">Reprogramada</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+            <span className="text-xs font-medium text-slate-500">Cancelada</span>
+          </div>
         </div>
       </div>
 
@@ -79,7 +88,7 @@ export default function AgendaHeader({
         </div>
       </div>
 
-      {/* Derecha: Vistas, Notificaciones, Usuario */}
+      {/* Derecha: Vistas */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0 justify-end">
         
         {/* Selectores de vista */}
@@ -108,24 +117,6 @@ export default function AgendaHeader({
           >
             Día
           </Button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-slate-600 rounded-full">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-          </Button>
-          
-          <div className="flex items-center gap-2 cursor-pointer">
-            <div className="hidden md:flex flex-col items-end">
-              <span className="text-sm font-bold text-slate-800 leading-tight">Dra.</span>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Odontóloga</span>
-            </div>
-            <Avatar className="h-9 w-9 border border-slate-200 shadow-sm">
-              <AvatarImage src="" />
-              <AvatarFallback className="bg-[#e0e7ff] text-[#2651A3] font-bold text-xs">DRA</AvatarFallback>
-            </Avatar>
-          </div>
         </div>
 
       </div>

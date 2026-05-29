@@ -61,7 +61,7 @@ export default function AgendaPage() {
         if (data.estado === "programada") data.estado = "pendiente";
         
         const docInfo = ESPECIALISTAS.find(e => e.id === data.especialistaId) || ESPECIALISTAS[0];
-        citas.push({ ...data, id: doc.id, especialistaNombre: docInfo.nombre, colorBg: docInfo.bg, colorText: docInfo.text });
+        citas.push({ ...data, id: doc.id, especialistaNombre: docInfo.nombre });
       });
 
       setCitasDelMes(citas);

@@ -12,6 +12,25 @@ export const TIPOS_CITA_COLORS = [
   { tipo: "General", bg: "bg-gray-500", text: "text-white" }
 ];
 
+export const determinarColorPorEstado = (estado: string | undefined) => {
+  if (!estado) return "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100";
+  
+  const e = estado.toLowerCase().trim();
+  
+  if (e.includes("confirm")) {
+    return "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100";
+  }
+  if (e.includes("repro") || e.includes("prog")) {
+    return "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100";
+  }
+  if (e.includes("cancel")) {
+    return "bg-red-100 border-red-200 text-red-700 hover:bg-red-200 line-through opacity-90";
+  }
+  
+  // Fallback para 'pendiente' u otros
+  return "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100";
+};
+
 export const determinarColorPorMotivo = (motivo: string) => {
   const m = motivo.toLowerCase();
   if (m.includes("limpieza") || m.includes("profilaxis")) return TIPOS_CITA_COLORS[1];

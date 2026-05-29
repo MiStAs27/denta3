@@ -3,7 +3,7 @@
 import React from "react";
 import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
-import { determinarColorPorMotivo } from "@/lib/agenda-constants";
+import { determinarColorPorEstado } from "@/lib/agenda-constants";
 
 interface CitaExtendida {
   id: string;
@@ -84,14 +84,13 @@ export default function CalendarWeekView({
               >
                 <div className="flex flex-col gap-1 overflow-y-auto flex-1 px-1 no-scrollbar pt-1">
                   {citasDelDia.map((cita) => {
-                    const tipo = determinarColorPorMotivo(cita.motivo);
-                    const inactiva = cita.estado === 'cancelada' || cita.estado === 'reprogramada';
+                    const estiloClases = determinarColorPorEstado(cita.estado);
                     
                     return (
                       <div 
                         key={cita.id}
                         onClick={(e) => { e.stopPropagation(); onCitaClick(cita.id); }}
-                        className={`w-full min-w-0 overflow-hidden flex flex-col px-2 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-transform hover:scale-[1.01] shadow-sm border border-black/5 ${inactiva ? 'bg-gray-100 text-gray-400 line-through' : `${tipo.bg} ${tipo.text}`}`}
+                        className={`w-full min-w-0 overflow-hidden flex flex-col px-2 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-transform hover:scale-[1.01] shadow-sm border border-black/5 ${estiloClases}`}
                         title={`${cita.horaInicio} - ${cita.pacienteNombre} (${cita.motivo})`}
                       >
                         <span className="opacity-90 font-bold mb-0.5">{cita.horaInicio}</span>
