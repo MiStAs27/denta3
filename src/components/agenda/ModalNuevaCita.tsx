@@ -76,7 +76,7 @@ export default function ModalNuevaCita({ isOpen, onClose, fechaPreseleccionada, 
         horaInicio: horaInicio,
         horaFin: horaFin,
         motivo: motivo,
-        estado: "programada", // Estado inicial por defecto
+        estado: "pendiente", // Estado inicial unificado por defecto
       };
 
       // Guardamos en la colección "citas" de Firebase
