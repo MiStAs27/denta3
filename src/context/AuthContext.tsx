@@ -102,7 +102,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else if (user) {
         // 🚨 REGLA DEL CORRALITO: Si está suspendido y NO es SuperAdmin
         if (user.estado === "Suspendido" && user.rol !== "SUPER_ADMIN") {
-          // Si intenta ir a cualquier lado que NO sea la página de suscripción o salida pública, ¡lo regresamos!
           if (!isSubscriptionRoute && !isPublicRoute) {
             router.push("/suscripcion");
             return; // Detenemos la ejecución para que no evalúe más reglas
