@@ -43,3 +43,11 @@ export const PERMISOS_POR_ROL: Record<RolUsuario, Permiso[]> = {
 export const tienePermiso = (rol: RolUsuario, permiso: Permiso): boolean => {
   return PERMISOS_POR_ROL[rol]?.includes(permiso) ?? false;
 };
+export interface UsuarioApp {
+  uid: string;
+  email: string;
+  nombre: string;
+  rol: RolUsuario;
+  clinicId?: string; // Es opcional porque el SUPER_ADMIN no tiene clínica
+  activo: boolean; 
+}

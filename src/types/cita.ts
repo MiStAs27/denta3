@@ -5,6 +5,7 @@ export type EstadoCita = 'programada' | 'pendiente' | 'confirmada' | 'completada
 
 export interface Cita {
   id?: string;
+  clinicId: string;
   pacienteId: string;
   pacienteNombre: string; 
   especialistaId: string; 

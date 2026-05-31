@@ -667,10 +667,9 @@ export default function PatientDetailPage() {
         {/* --- PESTAÑA: ODONTOGRAMA --- */}
         {tabActiva === "odontograma" && (
           <div className="animate-in fade-in duration-300">
-            <Odontograma />
+            <Odontograma patientId={patientId} /> {/* 👈 agrega esto */}
           </div>
         )}
-
         {/* --- PESTAÑA: EVOLUCIÓN --- */}
         {tabActiva === "evolucion" && (
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-[600px] flex flex-col animate-in fade-in duration-300">

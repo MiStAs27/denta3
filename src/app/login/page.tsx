@@ -1,11 +1,22 @@
 "use client";
 
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+
+// Usamos Lucide React para iconos más limpios y consistentes
+import { 
+  ArrowLeft, 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  LogIn, 
+  AlertCircle,
+  Stethoscope
+} from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,186 +47,193 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error(error);
-      setError("Correo o contraseña incorrectos.");
+      setError("Correo o contraseña incorrectos. Verifica tus credenciales.");
     } finally {
       setCargando(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen w-full font-sans">
+    <div className="flex min-h-screen w-full font-sans bg-white">
+      
+      {/* ── Panel izquierdo: Branding Premium (oculto en móvil) ── */}
+      <div 
+        className="hidden md:flex md:flex-1 flex-col justify-between p-10 lg:p-14 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #162B54 0%, #2651A3 50%, #39ACB8 100%)" }}
+      >
+        {/* Patrón de fondo (Dots) para darle textura */}
+        <div 
+          className="absolute inset-0 opacity-10" 
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}
+        />
 
-      {/* ── Panel izquierdo: branding (se oculta en móvil) ── */}
-      <div className="hidden md:flex md:flex-1 flex-col justify-between p-10 lg:p-14 relative overflow-hidden"
-        style={{ background: "linear-gradient(145deg,#1a3a75 0%,#2651A3 55%,#39ACB8 100%)" }}>
-
-        {/* Blobs decorativos */}
-        <span className="absolute rounded-full opacity-[0.07] bg-white"
-          style={{ width: 360, height: 360, top: -100, right: -100 }} />
-        <span className="absolute rounded-full opacity-[0.07] bg-white"
-          style={{ width: 220, height: 220, bottom: 30, left: -70 }} />
-        <span className="absolute rounded-full opacity-[0.07] bg-white"
-          style={{ width: 130, height: 130, bottom: 190, right: 60 }} />
+        {/* Blobs decorativos de luz */}
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-white/10 blur-3xl rounded-full mix-blend-overlay" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#39ACB8]/40 blur-3xl rounded-full mix-blend-overlay" />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 z-10">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center border"
-            style={{ background: "rgba(255,255,255,0.18)", borderColor: "rgba(255,255,255,0.3)" }}>
-            {/* Ícono diente SVG inline */}
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2C8 2 4 5 4 9c0 2 .5 3.5 1 5l1 6c.2 1 1 2 2 2s1.8-.8 2-2l.5-3c.2-1 .8-1 .8-1h1.4s.6 0 .8 1l.5 3c.2 1.2 1 2 2 2s1.8-1 2-2l1-6c.5-1.5 1-3 1-5 0-4-4-7-8-7z"/>
-            </svg>
+        <div className="flex items-center gap-3 z-10 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/10 border border-white/20 backdrop-blur-md shadow-lg">
+            <Stethoscope className="text-white w-6 h-6" />
           </div>
-          <span className="text-white font-medium text-xl tracking-tight">DentaSync</span>
+          <span className="text-white font-bold text-2xl tracking-tight">DentaSync</span>
         </div>
 
         {/* Hero copy */}
-        <div className="z-10">
-          <h2 className="text-white font-medium text-3xl leading-snug mb-3">
-            Gestión clínica inteligente para tu consultorio
+        <div className="z-10 max-w-md animate-in fade-in slide-in-from-left-4 duration-700 delay-150">
+          <h2 className="text-white font-extrabold text-4xl leading-tight mb-4">
+            La evolución de tu clínica dental comienza aquí.
           </h2>
-          <p className="text-white/70 text-base leading-relaxed">
-            Controla citas, pacientes y tu equipo desde un solo lugar — seguro, rápido y siempre disponible.
+          <p className="text-blue-100 text-lg leading-relaxed font-light">
+            Controla citas, pacientes, ingresos y a todo tu equipo desde una plataforma unificada, rápida y segura.
           </p>
         </div>
 
         {/* Feature list */}
-        <div className="z-10 flex flex-col gap-4">
+        <div className="z-10 flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
           {[
             { icon: "📅", label: "Agenda y citas en tiempo real" },
             { icon: "📋", label: "Expedientes clínicos digitales" },
             { icon: "🏥", label: "Multi-sucursal y multi-rol" },
-            { icon: "🔒", label: "Datos cifrados y seguros" },
+            { icon: "🔒", label: "Datos cifrados en la nube" },
           ].map((f) => (
-            <div key={f.label} className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border text-sm"
-                style={{ background: "rgba(255,255,255,0.14)", borderColor: "rgba(255,255,255,0.2)" }}>
+            <div key={f.label} className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/10 border border-white/20 backdrop-blur-sm shadow-sm text-lg">
                 {f.icon}
               </div>
-              <span className="text-white/75 text-sm">{f.label}</span>
+              <span className="text-blue-50 font-medium">{f.label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Panel derecho: formulario ── */}
-      <div className="flex flex-1 items-center justify-center bg-white px-6 py-12 sm:px-10">
+      {/* ── Panel derecho: Formulario de Login ── */}
+      <div className="flex flex-1 items-center justify-center bg-slate-50 md:bg-white px-6 py-12 sm:px-10 relative">
+        
+        {/* Contenedor principal del formulario */}
         <div className="w-full max-w-sm">
+          
+          {/* BOTÓN VOLVER (Mejorado y animado) */}
+          <button 
+            onClick={() => router.push('/')}
+            className="group flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#2651A3] transition-colors mb-10 bg-white md:bg-transparent px-3 py-1.5 rounded-full border border-slate-200 md:border-transparent hover:bg-slate-50 md:hover:bg-transparent w-fit"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            Volver al inicio
+          </button>
 
-          {/* Encabezado (solo móvil muestra logo aquí) */}
+          {/* Encabezado */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-6 md:hidden">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: "#2651A3" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2C8 2 4 5 4 9c0 2 .5 3.5 1 5l1 6c.2 1 1 2 2 2s1.8-.8 2-2l.5-3c.2-1 .8-1 .8-1h1.4s.6 0 .8 1l.5 3c.2 1.2 1 2 2 2s1.8-1 2-2l1-6c.5-1.5 1-3 1-5 0-4-4-7-8-7z"/>
-                </svg>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#2651A3] shadow-md">
+                <Stethoscope className="text-white w-5 h-5" />
               </div>
-              <span className="font-medium text-lg" style={{ color: "#2651A3" }}>DentaSync</span>
+              <span className="font-bold text-xl text-[#2651A3]">DentaSync</span>
             </div>
-            <h1 className="text-2xl font-medium text-gray-900">Bienvenido de vuelta</h1>
-            <p className="text-sm text-gray-500 mt-1">Ingresa a tu portal clínico</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Bienvenido de vuelta</h1>
+            <p className="text-sm text-slate-500 mt-2 font-medium">Ingresa tus credenciales para acceder a tu portal.</p>
           </div>
 
-          {/* Error */}
+          {/* Mensaje de Error */}
           {error && (
-            <div className="flex items-center gap-2 mb-5 p-3 rounded-lg border text-sm"
-              style={{ background: "#FFF0F0", borderColor: "#FFCDD2", color: "#B71C1C" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              {error}
+            <div className="flex items-start gap-3 mb-6 p-4 rounded-xl border bg-red-50 border-red-100 text-red-600 text-sm animate-in fade-in zoom-in-95 duration-300">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <p className="font-medium leading-relaxed">{error}</p>
             </div>
           )}
 
+          {/* Formulario */}
           <form onSubmit={handleLogin} className="space-y-5">
-
-            {/* Email */}
+            
+            {/* Input Email */}
             <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-xs font-medium text-gray-500">
-                Correo electrónico
+              <label htmlFor="email" className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                Correo Electrónico
               </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                  </svg>
+              <div className="relative group">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#39ACB8] transition-colors">
+                  <Mail className="w-5 h-5" />
                 </span>
                 <input
-                  id="email" type="email" required autoComplete="email"
+                  id="email" 
+                  type="email" 
+                  required 
+                  autoComplete="email"
                   placeholder="nombre@clinica.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border bg-gray-50 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
-                  style={{ borderColor: "#E2E8F0" }}
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-[#39ACB8] focus:ring-4 focus:ring-[#39ACB8]/10 shadow-sm"
                 />
               </div>
             </div>
 
-            {/* Contraseña */}
+            {/* Input Contraseña */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-xs font-medium text-gray-500">
+                <label htmlFor="password" className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Contraseña
                 </label>
-                <a href="#" className="text-xs hover:underline" style={{ color: "#39ACB8" }}>
+                <button type="button" className="text-xs font-bold text-[#39ACB8] hover:text-[#2651A3] transition-colors hover:underline">
                   ¿Olvidaste tu contraseña?
-                </a>
+                </button>
               </div>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
+              <div className="relative group">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#39ACB8] transition-colors">
+                  <Lock className="w-5 h-5" />
                 </span>
                 <input
-                  id="password" type={showPassword ? "text" : "password"} required autoComplete="current-password"
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  required 
+                  autoComplete="current-password"
                   placeholder="••••••••"
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 text-sm rounded-lg border bg-gray-50 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
-                  style={{ borderColor: "#E2E8F0" }}
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-11 pr-11 py-3 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-[#39ACB8] focus:ring-4 focus:ring-[#39ACB8]/10 shadow-sm"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
-                  {showPassword ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  )}
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Botón principal */}
-            <button type="submit" disabled={cargando}
-              className="w-full py-2.5 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 transition disabled:opacity-60"
-              style={{ background: cargando ? "#1a3a75" : "#2651A3" }}>
+            {/* Botón de Submit */}
+            <button 
+              type="submit" 
+              disabled={cargando}
+              className={`w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed ${cargando ? 'bg-[#1a3a75]' : 'bg-[#2651A3] hover:bg-[#1f438a] hover:-translate-y-0.5'}`}
+            >
               {cargando ? (
                 <>
-                  <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                   </svg>
                   Iniciando sesión...
                 </>
               ) : (
                 <>
-                  Iniciar sesión
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
+                  Iniciar Sesión
+                  <LogIn className="w-5 h-5" />
                 </>
               )}
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-6">
-            ¿Problemas para acceder?{" "}
-            <a href="#" className="hover:underline" style={{ color: "#2651A3" }}>Contacta soporte</a>
-          </p>
+          {/* Footer del form */}
+          <div className="mt-8 text-center text-sm">
+            <p className="text-slate-500">
+              ¿No tienes una cuenta aún?{" "}
+              <button onClick={() => router.push('/registro')} className="font-bold text-[#2651A3] hover:text-[#39ACB8] transition-colors hover:underline">
+                Registra tu clínica
+              </button>
+            </p>
+          </div>
+          
         </div>
       </div>
     </div>

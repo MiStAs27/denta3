@@ -2,13 +2,24 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, deleteDoc } from "firebase/firestore"; // Añadimos doc y deleteDoc
+// 1. AÑADIMOS 'query' y 'where' a la importación de Firebase
+import {
+  collection,
+  getDocs,
+  doc,
+  deleteDoc,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Paciente } from "@/types/paciente";
 
+// 2. IMPORTAMOS EL CONTEXTO DE AUTENTICACIÓN
+import { useAuth } from "@/context/AuthContext";
+
 import ModalDetallePaciente from "@/components/pacientes/ModalDetallePaciente";
 import ModalNuevoPaciente from "@/components/pacientes/ModalNuevoPaciente";
-import ModalEditarPaciente from "@/components/pacientes/ModalEditarPaciente"; // Añadimos el modal de editar
+import ModalEditarPaciente from "@/components/pacientes/ModalEditarPaciente";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,27 +33,38 @@ import {
 } from "@/components/ui/table";
 import { Search, Pencil, Trash2, Plus } from "lucide-react";
 
-
 export default function PacientesPage() {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
 
-  // Estados para manejar cuál paciente está seleccionado y qué modal abrir
+  // 3. OBTENEMOS AL USUARIO Y SU LLAVE DE CLÍNICA
+  const { user } = useAuth();
+
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(
     null,
   );
-  
+
   const [isDetalleOpen, setIsDetalleOpen] = useState(false);
   const [isNuevoOpen, setIsNuevoOpen] = useState(false);
-  const [isEditarOpen, setIsEditarOpen] = useState(false); // Estado para abrir modal de editar
+  const [isEditarOpen, setIsEditarOpen] = useState(false);
 
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 4. ACTUALIZAMOS LA FUNCIÓN PARA QUE FILTRE POR LA CLÍNICA
   const cargarPacientes = async () => {
+    // Si aún no ha cargado el usuario o no tiene clínica, no hacemos la búsqueda
+    if (!user?.tenantId) return;
+
     setLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, "pacientes"));
+      // MAGIA AQUÍ: Creamos la consulta con el filtro
+      const q = query(
+        collection(db, "pacientes"),
+        where("tenantId", "==", user.tenantId), // Solo trae los de ESTA clínica
+      );
+
+      const querySnapshot = await getDocs(q);
       const pacientesBD: Paciente[] = [];
       querySnapshot.forEach((doc) => {
         pacientesBD.push({ id: doc.id, ...doc.data() } as Paciente);
@@ -56,8 +78,9 @@ export default function PacientesPage() {
   };
 
   useEffect(() => {
+    // Añadimos user?.tenantId para que recargue cuando el usuario inicie sesión
     cargarPacientes();
-  }, []);
+  }, [user?.tenantId]);
 
   const pacientesFiltrados = pacientes.filter(
     (p) =>

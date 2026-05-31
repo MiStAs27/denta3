@@ -1,5 +1,7 @@
 "use client";
 
+// Añade esta línea arriba
+import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -17,7 +19,7 @@ interface ModalProps {
 
 export default function ModalNuevoPaciente({ isOpen, onClose, onPacienteCreado }: ModalProps) {
   const [cargando, setCargando] = useState(false);
-
+const { user } = useAuth();
   // Estado unificado para el formulario
   const [formData, setFormData] = useState({
     nombre: "", ci: "", celular: "", edad: "", fechaNacimiento: "", domicilio: "", lugarTrabajo: "",
@@ -31,11 +33,18 @@ export default function ModalNuevoPaciente({ isOpen, onClose, onPacienteCreado }
 
   const guardarPaciente = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // NUEVO: Validamos que el usuario tenga un tenantId asignado antes de guardar
+    if (!user?.tenantId) {
+      alert("Error: No se encontró la identificación de tu consultorio.");
+      return;
+    }
+
     setCargando(true);
 
     try {
-      // 1. Preparamos el objeto tal como lo definimos en los tipos
       const nuevoPaciente = {
+        tenantId: user.tenantId, // <--- NUEVO: Añadimos la llave maestra del consultorio
         nombre: formData.nombre,
         ci: formData.ci,
         celular: formData.celular,
@@ -43,7 +52,7 @@ export default function ModalNuevoPaciente({ isOpen, onClose, onPacienteCreado }
         fechaNacimiento: formData.fechaNacimiento,
         domicilio: formData.domicilio,
         lugarTrabajo: formData.lugarTrabajo,
-        fechaCreacion: new Date().toISOString().split('T')[0], // Fecha de hoy (YYYY-MM-DD)
+        fechaCreacion: new Date().toISOString().split('T')[0],
         contactoEmergencia: {
           nombre: formData.emergenciaNombre,
           parentesco: formData.emergenciaParentesco,
@@ -52,7 +61,7 @@ export default function ModalNuevoPaciente({ isOpen, onClose, onPacienteCreado }
         antecedentes: {
           alergias: formData.alergias,
           observaciones: formData.observaciones,
-          embarazo: false // Por defecto (luego podemos añadir el checkbox)
+          embarazo: false 
         }
       };
 

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, getDocs } from 'firebase/firestore';
+// 🔒 IMPORTAMOS query y where PARA EL FILTRO DE SEGURIDAD
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   BarChart3, Download, DollarSign, Users, 
@@ -33,22 +34,30 @@ export default function ReportesPage() {
     }
 
     const generarReportes = async () => {
-      if (!user) return;
+      // 🔒 REGLA SAAS: Si no hay llave de clínica, abortamos el cálculo
+      if (!user?.tenantId) return; 
       
       try {
         const hoy = new Date();
         const mesActual = hoy.getMonth();
         const añoActual = hoy.getFullYear();
 
-        // 1. Analizar Pacientes
-        const pacientesSnap = await getDocs(collection(db, "pacientes"));
+        // 1. ANALIZAR PACIENTES (SOLO LOS DE ESTA CLÍNICA)
+        const qPacientes = query(
+          collection(db, "pacientes"),
+          where("tenantId", "==", user.tenantId) // 🔒 FILTRO APLICADO AQUÍ
+        );
+        const pacientesSnap = await getDocs(qPacientes);
+        
         let deudaTotal = 0;
         let pacientesNuevosMes = 0;
         let totalPacientes = pacientesSnap.size;
 
         pacientesSnap.forEach((doc) => {
           const data = doc.data();
-          if (data.saldoPendiente > 0) deudaTotal += data.saldoPendiente;
+          if (data.saldoPendiente && data.saldoPendiente > 0) {
+            deudaTotal += data.saldoPendiente;
+          }
           
           if (data.fechaCreacion) {
             const fechaDoc = new Date(data.fechaCreacion);
@@ -58,14 +67,19 @@ export default function ReportesPage() {
           }
         });
 
-        // 2. Analizar Finanzas y Tratamientos (Buscamos en las subcolecciones de cada paciente)
+        // 2. ANALIZAR FINANZAS Y TRATAMIENTOS
         let ingresosTotales = 0;
         const conteoTratamientos: Record<string, number> = {};
 
-        // Recorremos cada paciente para leer su historial de presupuestos
-        for (const pacienteDoc of pacientesSnap.docs) {
-          const presupuestosSnap = await getDocs(collection(db, "pacientes", pacienteDoc.id, "presupuestos"));
-          
+        // Recorremos SOLO los pacientes de esta clínica
+        // Optimización: Usamos Promise.all para que las subcolecciones carguen mucho más rápido
+        const promesasPresupuestos = pacientesSnap.docs.map(pacienteDoc => 
+          getDocs(collection(db, "pacientes", pacienteDoc.id, "presupuestos"))
+        );
+        
+        const resultadosPresupuestos = await Promise.all(promesasPresupuestos);
+
+        resultadosPresupuestos.forEach((presupuestosSnap) => {
           presupuestosSnap.forEach((presupuestoDoc) => {
             const presData = presupuestoDoc.data();
             
@@ -78,7 +92,7 @@ export default function ReportesPage() {
               conteoTratamientos[nombreTratamiento] = (conteoTratamientos[nombreTratamiento] || 0) + 1;
             }
           });
-        }
+        });
 
         // Convertir el conteo de tratamientos a un array ordenado para el ranking
         const rankingTratamientos = Object.entries(conteoTratamientos)
@@ -101,12 +115,13 @@ export default function ReportesPage() {
       }
     };
 
-    generarReportes();
+    if (!authLoading) {
+      generarReportes();
+    }
   }, [user, authLoading, router]);
 
   const handleExportarPDF = () => {
     alert("Función de exportar PDF en construcción...");
-    // Aquí implementaremos JS-PDF en el futuro
   };
 
   if (authLoading || cargando) {
@@ -199,7 +214,6 @@ export default function ReportesPage() {
               <p className="text-slate-400 text-sm text-center py-4">No hay datos suficientes de tratamientos.</p>
             ) : (
               datosReporte.tratamientosPopulares.map((tratamiento, index) => {
-                // Cálculo de porcentaje para hacer la barra visual
                 const maxCantidad = datosReporte.tratamientosPopulares[0].cantidad;
                 const porcentaje = (tratamiento.cantidad / maxCantidad) * 100;
                 
@@ -209,7 +223,6 @@ export default function ReportesPage() {
                       <span className="font-bold text-slate-700">{index + 1}. {tratamiento.nombre}</span>
                       <span className="font-medium text-slate-500">{tratamiento.cantidad} ventas</span>
                     </div>
-                    {/* Barra de progreso visual nativa con Tailwind */}
                     <div className="w-full bg-slate-100 rounded-full h-2">
                       <div 
                         className="bg-[#39ACB8] h-2 rounded-full transition-all duration-1000" 

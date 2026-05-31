@@ -1,38 +1,39 @@
-// src/app/api/users/route.ts
-import { NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { NextResponse } from "next/server";
+import { adminAuth as auth, adminDb as db } from "@/lib/firebase-admin"; 
 
 export async function POST(request: Request) {
   try {
-    // 1. Recibimos los datos que envía el formulario
     const body = await request.json();
-    const { nombre, email, rol } = body;
+    
+    // 1. Ahora la API recibe también el tenantId
+    const { email, password, nombreAdmin, nombreClinica, rol, tenantId } = body;
 
-    if (!email || !nombre || !rol) {
-      return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 });
-    }
-
-    // 2. Usamos el poder de Admin para crear la cuenta de acceso (Authentication)
-    const userRecord = await adminAuth.createUser({
-      email: email,
-      password: 'dentasync', // Contraseña por defecto
-      displayName: nombre,
+    // 2. Crear el usuario en Firebase Authentication (El Portero)
+    const userRecord = await auth.createUser({
+      email,
+      password,
+      displayName: nombreAdmin,
     });
 
-    // 3. Guardamos los datos en la base de datos (Firestore) usando el MISMO ID que nos dio Authentication
-    await adminDb.collection('usuarios').doc(userRecord.uid).set({
-      nombre: nombre,
-      email: email,
-      rol: rol,
+    // 3. LÓGICA INTELIGENTE DE SAAS (La Llave de la Clínica)
+    // Si la clínica crea un empleado, usa el tenantId de la clínica.
+    // Si el Super Admin crea una nueva Clínica, el propio UID del doctor se convierte en el tenantId maestro.
+    const llaveClinica = tenantId ? tenantId : userRecord.uid;
+
+    // 4. Guardar el perfil en Firestore con todos los sellos de seguridad
+    await db.collection("usuarios").doc(userRecord.uid).set({
+      email: email.toLowerCase(),
+      nombre: nombreAdmin,
+      nombreClinica: nombreClinica || "",
+      rol: rol || "TENANT_ADMIN",
+      tenantId: llaveClinica, // 🔒 EL CANDADO SE CIERRA AQUÍ
+      estado: "Activo",
       fechaCreacion: new Date().toISOString(),
     });
 
-    // Respondemos que todo salió perfecto
-    return NextResponse.json({ success: true, message: 'Usuario creado exitosamente' });
-    
+    return NextResponse.json({ success: true, uid: userRecord.uid });
   } catch (error: any) {
-    console.error('Error en API de usuarios:', error);
-    // Si Firebase nos dice que el correo ya existe, enviamos ese error
+    console.error("Error creando usuario:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

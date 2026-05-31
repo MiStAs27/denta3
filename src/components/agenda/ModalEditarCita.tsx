@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -19,7 +20,7 @@ interface ModalEditarProps {
 
 export default function ModalEditarCita({ isOpen, onClose, cita, onCitaActualizada }: ModalEditarProps) {
   const [cargando, setCargando] = useState(false);
-  
+  const { user } = useAuth();
   const [fecha, setFecha] = useState("");
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFin, setHoraFin] = useState("");
@@ -59,27 +60,28 @@ export default function ModalEditarCita({ isOpen, onClose, cita, onCitaActualiza
           return;
         }
 
-        // 1. Actualizamos la cita actual para que quede como "reprogramada" y tachada hoy
+        // 1. Actualizamos la cita antigua
         await updateDoc(citaRef, {
           estado: "reprogramada",
-          fechaReprogramada: nuevaFecha // Guardamos a dónde se fue
+          fechaReprogramada: nuevaFecha 
         });
 
-        // 2. Creamos una NUEVA cita en el futuro
+        // 2. CREAMOS LA NUEVA CITA CON EL SELLO DE LA CLÍNICA
         const nuevaCita = {
+          tenantId: user?.tenantId, // <--- ¡AQUÍ ESTÁ LA SOLUCIÓN!
           pacienteId: cita.pacienteId,
           pacienteNombre: cita.pacienteNombre,
           especialistaId: cita.especialistaId,
           fecha: nuevaFecha,
           horaInicio: nuevaHora,
-          horaFin: cita.horaFin, // Mantenemos la duración aprox
+          horaFin: cita.horaFin, 
           motivo: cita.motivo,
-          estado: "pendiente" // La nueva cita nace como pendiente
+          estado: "pendiente" 
         };
         await addDoc(collection(db, "citas"), nuevaCita);
 
       } else {
-        // Actualización normal (solo cambió la hora, motivo o se confirmó)
+        // Actualización normal
         await updateDoc(citaRef, { fecha, horaInicio, horaFin, motivo, estado });
       }
 

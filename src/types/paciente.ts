@@ -14,6 +14,7 @@ export interface AntecedentesPatologicos {
 
 export interface Paciente {
   id?: string; // ID generado por Firebase Firestore
+  clinicId: string;
   nombre: string;
   ci: string;
   saldoPendiente: number;

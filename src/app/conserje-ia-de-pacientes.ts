@@ -9,4 +9,4 @@ import { z } from 'genkit';
 // Lógica del flujo...
 export async function patientAIAppointmentConcierge(input: any) {
   // Implementación igual a la original
-}
+} 
