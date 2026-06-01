@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 
 // Usamos Lucide React para iconos más limpios y consistentes
@@ -15,7 +15,9 @@ import {
   EyeOff, 
   LogIn, 
   AlertCircle,
-  Stethoscope
+  Stethoscope,
+  CheckCircle,
+  X
 } from "lucide-react";
 
 export default function LoginPage() {
@@ -25,6 +27,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Estados para recuperación de contraseña
+  const [mostradorRecuperacion, setMostradorRecuperacion] = useState(false);
+  const [emailRecuperacion, setEmailRecuperacion] = useState("");
+  const [cargandoRecuperacion, setCargandoRecuperacion] = useState(false);
+  const [mensajeRecuperacion, setMensajeRecuperacion] = useState("");
+  const [errorRecuperacion, setErrorRecuperacion] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +59,41 @@ export default function LoginPage() {
       setError("Correo o contraseña incorrectos. Verifica tus credenciales.");
     } finally {
       setCargando(false);
+    }
+  };
+
+  // Función para enviar correo de recuperación
+  const handleRecuperacion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorRecuperacion("");
+    setMensajeRecuperacion("");
+
+    if (!emailRecuperacion.trim()) {
+      setErrorRecuperacion("Por favor ingresa tu correo electrónico");
+      return;
+    }
+
+    setCargandoRecuperacion(true);
+    try {
+      await sendPasswordResetEmail(auth, emailRecuperacion);
+      setMensajeRecuperacion(`✓ Correo enviado exitosamente a ${emailRecuperacion}. Revisa tu bandeja de entrada para cambiar tu contraseña.`);
+      setEmailRecuperacion("");
+      
+      // Cierra el modal después de 3 segundos
+      setTimeout(() => {
+        setMostradorRecuperacion(false);
+      }, 3000);
+    } catch (error: any) {
+      console.error("Error en recuperación:", error);
+      if (error.code === "auth/user-not-found") {
+        setErrorRecuperacion("No existe una cuenta registrada con este correo.");
+      } else if (error.code === "auth/invalid-email") {
+        setErrorRecuperacion("El correo ingresado no es válido.");
+      } else {
+        setErrorRecuperacion("No pudimos procesar tu solicitud. Intenta nuevamente.");
+      }
+    } finally {
+      setCargandoRecuperacion(false);
     }
   };
 
@@ -173,7 +217,11 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Contraseña
                 </label>
-                <button type="button" className="text-xs font-bold text-[#39ACB8] hover:text-[#2651A3] transition-colors hover:underline">
+                <button 
+                  type="button" 
+                  onClick={() => setMostradorRecuperacion(true)}
+                  className="text-xs font-bold text-[#39ACB8] hover:text-[#2651A3] transition-colors hover:underline"
+                >
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
@@ -236,6 +284,127 @@ export default function LoginPage() {
           
         </div>
       </div>
+
+      {/* MODAL DE RECUPERACIÓN DE CONTRASEÑA */}
+      {mostradorRecuperacion && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-300">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-slate-900">Recuperar Contraseña</h2>
+              <button 
+                onClick={() => {
+                  setMostradorRecuperacion(false);
+                  setEmailRecuperacion("");
+                  setMensajeRecuperacion("");
+                  setErrorRecuperacion("");
+                }}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Descripción */}
+            <p className="text-sm text-slate-600 mb-6">
+              Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+            </p>
+
+            {/* Mensaje de Éxito */}
+            {mensajeRecuperacion && (
+              <div className="flex items-start gap-3 mb-6 p-4 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-700 text-sm animate-in fade-in slide-in-from-top-2">
+                <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="font-medium leading-relaxed">{mensajeRecuperacion}</p>
+              </div>
+            )}
+
+            {/* Mensaje de Error */}
+            {errorRecuperacion && (
+              <div className="flex items-start gap-3 mb-6 p-4 rounded-lg border bg-red-50 border-red-200 text-red-700 text-sm animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="font-medium leading-relaxed">{errorRecuperacion}</p>
+              </div>
+            )}
+
+            {/* Formulario */}
+            {!mensajeRecuperacion && (
+              <form onSubmit={handleRecuperacion} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="email-recuperacion" className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                    Correo Electrónico
+                  </label>
+                  <div className="relative group">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#39ACB8] transition-colors">
+                      <Mail className="w-5 h-5" />
+                    </span>
+                    <input
+                      id="email-recuperacion"
+                      type="email" 
+                      required 
+                      placeholder="nombre@clinica.com"
+                      value={emailRecuperacion} 
+                      onChange={(e) => setEmailRecuperacion(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-[#39ACB8] focus:ring-4 focus:ring-[#39ACB8]/10 shadow-sm"
+                      disabled={cargandoRecuperacion}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={cargandoRecuperacion}
+                    className="flex-1 py-2.5 px-4 rounded-lg bg-[#2651A3] hover:bg-[#1f438a] text-white text-sm font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {cargandoRecuperacion ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                        </svg>
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        Enviar enlace
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMostradorRecuperacion(false);
+                      setEmailRecuperacion("");
+                      setMensajeRecuperacion("");
+                      setErrorRecuperacion("");
+                    }}
+                    className="px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold transition-all"
+                    disabled={cargandoRecuperacion}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Cerrar si está en éxito */}
+            {mensajeRecuperacion && (
+              <button
+                onClick={() => {
+                  setMostradorRecuperacion(false);
+                  setEmailRecuperacion("");
+                  setMensajeRecuperacion("");
+                  setErrorRecuperacion("");
+                }}
+                className="w-full py-2.5 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold transition-all"
+              >
+                Volver al Login
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

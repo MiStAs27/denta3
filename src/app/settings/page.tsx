@@ -12,7 +12,7 @@ import {
   getDoc,
   setDoc,
 } from "firebase/firestore";
-import { signOut, sendPasswordResetEmail } from "firebase/auth";
+import { signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -30,6 +30,8 @@ import {
   Mail,
   Phone,
   MapPin,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +44,17 @@ export default function SettingsPage() {
   const { toast } = useToast();
 
   const [tabActiva, setTabActiva] = useState("perfil");
+
+  // ==========================================
+  // ESTADOS: CAMBIO DE CONTRASEÑA
+  // ==========================================
+  const [mostradorCambioContrasena, setMostradorCambioContrasena] = useState(false);
+  const [contrasenaActual, setContrasenaActual] = useState("");
+  const [contrasenaNew, setContrasenaNew] = useState("");
+  const [contrasenaNewConfirm, setContrasenaNewConfirm] = useState("");
+  const [cambioContrasenaEnProgreso, setCambioContrasenaEnProgreso] = useState(false);
+  const [mostrarContrasenarNew, setMostrarContrasenarNew] = useState(false);
+  const [mostrarContrasenarConfirm, setMostrarContrasenarConfirm] = useState(false);
 
   // ==========================================
   // ESTADOS: GESTIÓN DE PERSONAL
@@ -287,6 +300,76 @@ export default function SettingsPage() {
     }
   };
 
+  // ==========================================
+  // CAMBIO DE CONTRASEÑA DIRECTO
+  // ==========================================
+  const cambiarContrasena = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validaciones
+    if (!contrasenaActual) {
+      toast({ title: "Por favor ingresa tu contraseña actual", variant: "destructive" });
+      return;
+    }
+    
+    if (!contrasenaNew || !contrasenaNewConfirm) {
+      toast({ title: "Por favor completa todos los campos", variant: "destructive" });
+      return;
+    }
+
+    if (contrasenaNew.length < 6) {
+      toast({ title: "La nueva contraseña debe tener al menos 6 caracteres", variant: "destructive" });
+      return;
+    }
+
+    if (contrasenaNew !== contrasenaNewConfirm) {
+      toast({ title: "Las contraseñas nuevas no coinciden", variant: "destructive" });
+      return;
+    }
+
+    if (contrasenaNew === contrasenaActual) {
+      toast({ title: "La nueva contraseña debe ser diferente a la actual", variant: "destructive" });
+      return;
+    }
+
+    setCambioContrasenaEnProgreso(true);
+    try {
+      if (!user?.email) {
+        throw new Error("No se pudo obtener tu correo electrónico");
+      }
+
+      // 1. Re-autenticar al usuario con la contraseña actual
+      const credential = EmailAuthProvider.credential(user.email, contrasenaActual);
+      await reauthenticateWithCredential(auth.currentUser!, credential);
+
+      // 2. Cambiar a la nueva contraseña
+      await updatePassword(auth.currentUser!, contrasenaNew);
+
+      // 3. Limpiar formulario y mostrar éxito
+      setContrasenaActual("");
+      setContrasenaNew("");
+      setContrasenaNewConfirm("");
+      setMostradorCambioContrasena(false);
+      
+      toast({
+        title: "¡Contraseña actualizada exitosamente!",
+        description: "Tu nueva contraseña ya está activa",
+      });
+    } catch (error: any) {
+      console.error("Error al cambiar contraseña:", error);
+      
+      if (error.code === "auth/wrong-password") {
+        toast({ title: "La contraseña actual es incorrecta", variant: "destructive" });
+      } else if (error.code === "auth/weak-password") {
+        toast({ title: "La nueva contraseña es muy débil", variant: "destructive" });
+      } else {
+        toast({ title: "Error al cambiar la contraseña: " + error.message, variant: "destructive" });
+      }
+    } finally {
+      setCambioContrasenaEnProgreso(false);
+    }
+  };
+
   const esAdmin = user?.rol === "TENANT_ADMIN" || user?.rol === "SUPER_ADMIN";
 
   return (
@@ -349,10 +432,9 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 className="w-full justify-start text-gray-700"
-                onClick={() => user?.email && restablecerContrasena(user.email)}
+                onClick={() => setMostradorCambioContrasena(!mostradorCambioContrasena)}
               >
-                <KeyRound className="w-4 h-4 mr-2" /> Solicitar Cambio de
-                Contraseña
+                <KeyRound className="w-4 h-4 mr-2" /> {mostradorCambioContrasena ? "Cancelar Cambio" : "Cambiar Contraseña"}
               </Button>
               <Button
                 variant="destructive"
@@ -362,6 +444,110 @@ export default function SettingsPage() {
                 <LogOut className="w-4 h-4 mr-2" /> Cerrar Sesión Segura
               </Button>
             </div>
+
+            {/* FORMULARIO DE CAMBIO DE CONTRASEÑA */}
+            {mostradorCambioContrasena && (
+              <div className="pt-6 border-t space-y-4 bg-blue-50 p-4 rounded-lg animate-in slide-in-from-top-2">
+                <div>
+                  <h3 className="font-bold text-sm text-gray-800 mb-4">Cambiar Contraseña</h3>
+                  <p className="text-xs text-gray-600 mb-4">Por seguridad, debes ingresar tu contraseña actual para establecer una nueva.</p>
+                </div>
+                
+                <form onSubmit={cambiarContrasena} className="space-y-3">
+                  {/* Contraseña Actual */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contrasena-actual" className="text-xs font-bold">
+                      Contraseña Actual
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="contrasena-actual"
+                        type="password"
+                        value={contrasenaActual}
+                        onChange={(e) => setContrasenaActual(e.target.value)}
+                        placeholder="Ingresa tu contraseña actual"
+                        className="bg-white"
+                        disabled={cambioContrasenaEnProgreso}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Contraseña Nueva */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contrasena-new" className="text-xs font-bold">
+                      Nueva Contraseña
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="contrasena-new"
+                        type={mostrarContrasenarNew ? "text" : "password"}
+                        value={contrasenaNew}
+                        onChange={(e) => setContrasenaNew(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="bg-white pr-10"
+                        disabled={cambioContrasenaEnProgreso}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMostrarContrasenarNew(!mostrarContrasenarNew)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {mostrarContrasenarNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirmar Nueva Contraseña */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contrasena-confirm" className="text-xs font-bold">
+                      Confirmar Nueva Contraseña
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="contrasena-confirm"
+                        type={mostrarContrasenarConfirm ? "text" : "password"}
+                        value={contrasenaNewConfirm}
+                        onChange={(e) => setContrasenaNewConfirm(e.target.value)}
+                        placeholder="Repite tu nueva contraseña"
+                        className="bg-white pr-10"
+                        disabled={cambioContrasenaEnProgreso}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMostrarContrasenarConfirm(!mostrarContrasenarConfirm)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {mostrarContrasenarConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Botones de Acción */}
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-[#2651A3] hover:bg-[#1e4082] text-white"
+                      disabled={cambioContrasenaEnProgreso}
+                    >
+                      {cambioContrasenaEnProgreso ? "Actualizando..." : "Actualizar Contraseña"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setMostradorCambioContrasena(false);
+                        setContrasenaActual("");
+                        setContrasenaNew("");
+                        setContrasenaNewConfirm("");
+                      }}
+                      disabled={cambioContrasenaEnProgreso}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         )}
 
