@@ -10,7 +10,7 @@ import { tienePermiso, Permiso } from '@/types/roles'
 
 import { 
   LayoutDashboard, Users, Calendar, BrainCircuit, 
-  MessageSquare, Activity, Settings, Stethoscope, LogOut, CreditCard, AlertCircle
+  MessageSquare, Activity, Settings, Stethoscope, LogOut, CreditCard, AlertCircle, Wallet
 } from 'lucide-react'
 import {
   Sidebar, SidebarContent, SidebarHeader, SidebarMenu,
@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Vista General', href: '/dashboard', icon: LayoutDashboard }, 
   { name: 'Agenda', href: '/agenda', icon: Calendar, permisoRequerido: 'gestionar_agenda' },
   { name: 'Pacientes', href: '/pacientes', icon: Users, permisoRequerido: 'gestionar_pacientes' },
+  { name: 'Cobros y Saldos', href: '/cobros', icon: Wallet, permisoRequerido: 'gestionar_cobros' },
   { name: 'Informes y Reportes', href: '/analytics', icon: Activity, permisoRequerido: 'ver_reportes_financieros' },
   { name: 'Mi Suscripción', href: '/suscripcion', icon: CreditCard, permisoRequerido: 'configurar_consultorio' },
   { name: 'Configuración', href: '/settings', icon: Settings, permisoRequerido: 'configurar_consultorio' },
@@ -125,7 +126,7 @@ export function ClinicSidebar() {
             <SidebarMenuItem key={item.name}>
               <SidebarMenuButton 
                 asChild 
-                isActive={pathname === item.href}
+                isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))}
                 tooltip={item.name}
               >
                 <Link href={item.href}>

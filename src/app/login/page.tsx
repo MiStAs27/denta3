@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 
 // Usamos Lucide React para iconos más limpios y consistentes
@@ -25,6 +25,9 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
+  const [mensajeRecuperacion, setMensajeRecuperacion] = useState("");
+  const [tipoRecuperacion, setTipoRecuperacion] = useState<"success" | "error" | "">("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +53,48 @@ export default function LoginPage() {
       setError("Correo o contraseña incorrectos. Verifica tus credenciales.");
     } finally {
       setCargando(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setMensajeRecuperacion("");
+    setTipoRecuperacion("");
+    setError("");
+
+    const correo = email.trim();
+    if (!correo) {
+      setError("Ingresa tu correo electrónico arriba para recuperar tu contraseña.");
+      document.getElementById("email")?.focus();
+      return;
+    }
+
+    setRecuperando(true);
+    try {
+      await sendPasswordResetEmail(auth, correo);
+      setMensajeRecuperacion(
+        `Te enviamos un enlace de recuperación a ${correo}. Revisa tu bandeja de entrada y la carpeta de spam.`
+      );
+      setTipoRecuperacion("success");
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === "auth/invalid-email") {
+        setMensajeRecuperacion("El correo ingresado no es válido.");
+      } else if (err.code === "auth/too-many-requests") {
+        setMensajeRecuperacion(
+          "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
+        );
+      } else {
+        // Por seguridad, mensaje genérico aunque el usuario no exista
+        setMensajeRecuperacion(
+          "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."
+        );
+        setTipoRecuperacion("success");
+        setRecuperando(false);
+        return;
+      }
+      setTipoRecuperacion("error");
+    } finally {
+      setRecuperando(false);
     }
   };
 
@@ -142,6 +187,19 @@ export default function LoginPage() {
             </div>
           )}
 
+          {mensajeRecuperacion && (
+            <div
+              className={`flex items-start gap-3 mb-6 p-4 rounded-xl border text-sm animate-in fade-in zoom-in-95 duration-300 ${
+                tipoRecuperacion === "success"
+                  ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                  : "bg-red-50 border-red-100 text-red-600"
+              }`}
+            >
+              <Mail className="w-5 h-5 shrink-0 mt-0.5" />
+              <p className="font-medium leading-relaxed">{mensajeRecuperacion}</p>
+            </div>
+          )}
+
           {/* Formulario */}
           <form onSubmit={handleLogin} className="space-y-5">
             
@@ -173,8 +231,13 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Contraseña
                 </label>
-                <button type="button" className="text-xs font-bold text-[#39ACB8] hover:text-[#2651A3] transition-colors hover:underline">
-                  ¿Olvidaste tu contraseña?
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={recuperando}
+                  className="text-xs font-bold text-[#39ACB8] hover:text-[#2651A3] transition-colors hover:underline disabled:opacity-50"
+                >
+                  {recuperando ? "Enviando..." : "¿Olvidaste tu contraseña?"}
                 </button>
               </div>
               <div className="relative group">

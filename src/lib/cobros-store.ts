@@ -11,7 +11,7 @@ import {
   where,
   orderBy,
   runTransaction,
-  Timestamp,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
@@ -46,11 +46,49 @@ export function calcularFechaVencimiento(vigenciaDias: number): string {
 // ─────────────────────────────────────────────────────────────
 // PRESUPUESTOS
 // ─────────────────────────────────────────────────────────────
+/** Extrae saldo pendiente de un doc (nuevo o legacy) */
+function saldoDePresupuesto(data: Record<string, unknown>): number {
+  if (typeof data.saldoPendiente === "number") return data.saldoPendiente;
+  const total = (data.total as number) ?? (data.costoTotal as number) ?? 0;
+  const abonado = (data.abonado as number) ?? 0;
+  return Math.max(0, total - abonado);
+}
+
+/** Concepto legible de un presupuesto (nuevo o legacy) */
+function conceptoPresupuesto(p: Presupuesto & Record<string, unknown>): string {
+  if (p.items?.length) return p.items.map((i) => i.nombre).join(", ");
+  if (p.tratamiento) return String(p.tratamiento);
+  return "Presupuesto";
+}
+
+/** Marca presupuestos vencidos por fecha */
+export async function marcarPresupuestosVencidos(
+  pacienteId: string
+): Promise<void> {
+  const snap = await getDocs(
+    collection(db, "pacientes", pacienteId, "presupuestos")
+  );
+  const ahora = new Date();
+  for (const d of snap.docs) {
+    const data = d.data();
+    if (data.estado !== "Pendiente") continue;
+    const vencimiento = data.fechaVencimiento
+      ? new Date(data.fechaVencimiento)
+      : null;
+    if (vencimiento && vencimiento < ahora && saldoDePresupuesto(data) > 0) {
+      await updateDoc(doc(db, "pacientes", pacienteId, "presupuestos", d.id), {
+        estado: "Vencido",
+      });
+    }
+  }
+}
+
 export async function crearPresupuesto(
   presupuesto: Omit<Presupuesto, "id">
 ): Promise<string> {
   const ref = collection(db, "pacientes", presupuesto.pacienteId, "presupuestos");
   const docRef = await addDoc(ref, presupuesto);
+  await recalcularSaldoPaciente(presupuesto.pacienteId);
   return docRef.id;
 }
 export async function actualizarEstadoPresupuesto(
@@ -93,11 +131,12 @@ export async function registrarPago(
       );
       const presSnap = await transaction.get(presRef);
       if (presSnap.exists()) {
-        const presData = presSnap.data() as Presupuesto;
-        const nuevoAbonado = (presData as any).abonado
-          ? (presData as any).abonado + pago.montoNeto
+        const presData = presSnap.data() as Presupuesto & { abonado?: number; costoTotal?: number };
+        const totalPres = presData.total ?? presData.costoTotal ?? 0;
+        const nuevoAbonado = presData.abonado
+          ? presData.abonado + pago.montoNeto
           : pago.montoNeto;
-        const nuevoSaldo = Math.max(0, presData.total - nuevoAbonado);
+        const nuevoSaldo = Math.max(0, totalPres - nuevoAbonado);
         transaction.update(presRef, {
           abonado: nuevoAbonado,
           saldoPendiente: nuevoSaldo,
@@ -111,7 +150,35 @@ export async function registrarPago(
   });
   // 4. Recalculo completo del saldo (fuera de la transaction por limitación de lecturas)
   await recalcularSaldoPaciente(pago.pacienteId);
+  await registrarComisionAutomatica(pago, pagoId);
   return pagoId;
+}
+
+async function registrarComisionAutomatica(
+  pago: Omit<Pago, "id">,
+  pagoId: string
+): Promise<void> {
+  if (!pago.doctorId) return;
+  const configs = await obtenerConfigComisiones(pago.tenantId);
+  const config = configs.find((c) => c.doctorId === pago.doctorId && c.activo);
+  if (!config) return;
+
+  const periodo = pago.fecha.slice(0, 7);
+  const comisionCalculada = (pago.montoNeto * config.porcentajeGlobal) / 100;
+  await registrarComision({
+    tenantId: pago.tenantId,
+    doctorId: config.doctorId,
+    doctorNombre: config.doctorNombre,
+    pagoId,
+    pacienteId: pago.pacienteId,
+    pacienteNombre: pago.pacienteNombre,
+    fecha: pago.fecha,
+    periodo,
+    montoBase: pago.montoNeto,
+    porcentaje: config.porcentajeGlobal,
+    comisionCalculada,
+    anulado: false,
+  });
 }
 export async function anularPago(
   pacienteId: string,
@@ -142,12 +209,13 @@ export async function anularPago(
       );
       const presSnap = await transaction.get(presRef);
       if (presSnap.exists()) {
-        const presData = presSnap.data() as any;
+        const presData = presSnap.data() as Presupuesto & { abonado?: number; costoTotal?: number };
+        const totalPres = presData.total ?? presData.costoTotal ?? 0;
         const nuevoAbonado = Math.max(
           0,
           (presData.abonado || 0) - pago.montoNeto
         );
-        const nuevoSaldo = presData.total - nuevoAbonado;
+        const nuevoSaldo = totalPres - nuevoAbonado;
         transaction.update(presRef, {
           abonado: nuevoAbonado,
           saldoPendiente: nuevoSaldo,
@@ -157,6 +225,21 @@ export async function anularPago(
     }
   });
   await recalcularSaldoPaciente(pacienteId);
+  await anularComisionPorPago(pacienteId, pagoId);
+}
+
+async function anularComisionPorPago(
+  _pacienteId: string,
+  pagoId: string
+): Promise<void> {
+  const q = query(
+    collection(db, "comisiones"),
+    where("pagoId", "==", pagoId)
+  );
+  const snap = await getDocs(q);
+  for (const d of snap.docs) {
+    await updateDoc(doc(db, "comisiones", d.id), { anulado: true });
+  }
 }
 export async function obtenerPagosPaciente(pacienteId: string): Promise<Pago[]> {
   const ref = collection(db, "pacientes", pacienteId, "pagos");
@@ -175,13 +258,12 @@ export async function recalcularSaldoPaciente(
   );
   let saldoTotal = 0;
   presSnap.docs.forEach((d) => {
-    const data = d.data();
-    const saldoItem = data.saldoPendiente ?? 0;
-    saldoTotal += saldoItem;
+    saldoTotal += saldoDePresupuesto(d.data());
   });
   const pacienteRef = doc(db, "pacientes", pacienteId);
   await updateDoc(pacienteRef, {
     saldoPendiente: saldoTotal,
+    status: saldoTotal > 0 ? "Pendiente" : "Activo",
   });
   return saldoTotal;
 }
@@ -198,15 +280,17 @@ export async function obtenerMovimientosCuenta(
   const movimientos: MovimientoCuenta[] = [];
   // Cargos (presupuestos)
   presupuestos.forEach((p) => {
+    const raw = p as Presupuesto & Record<string, unknown>;
+    const total = p.total ?? (raw.costoTotal as number) ?? 0;
     movimientos.push({
       id: p.id!,
       tipo: "cargo",
       fecha: p.fecha,
-      concepto: p.items.map((i) => i.nombre).join(", ") || "Presupuesto",
-      numero: p.numero,
-      monto: p.total,
-      saldoAcumulado: 0, // se calcula a continuación
-      estado: p.estado,
+      concepto: conceptoPresupuesto(raw),
+      numero: p.numero || "SIN-NUM",
+      monto: total,
+      saldoAcumulado: 0,
+      estado: p.estado || "Pendiente",
       anulado: false,
     });
   });
@@ -263,11 +347,7 @@ export async function guardarConfigMorosos(
   config: ConfiguracionMorosos
 ): Promise<void> {
   const ref = doc(db, "configuracion", config.tenantId, "morosos", "config");
-  await updateDoc(ref, { ...config }).catch(async () => {
-    await addDoc(collection(db, "configuracion", config.tenantId, "morosos"), {
-      ...config,
-    });
-  });
+  await setDoc(ref, { ...config }, { merge: true });
 }
 export async function marcarMorosoManual(
   pacienteId: string,
@@ -300,19 +380,21 @@ export async function evaluarMorososTenant(
   const ahora = new Date();
   for (const pacDoc of pacientesSnap.docs) {
     const pac = pacDoc.data();
-    if (pac.morosoManual) continue; // Saltamos los marcados manualmente
-    // Revisar deuda más antigua
+    if (pac.morosoManual) continue;
     const presSnap = await getDocs(
-      query(
-        collection(db, "pacientes", pacDoc.id, "presupuestos"),
-        where("saldoPendiente", ">", 0),
-        orderBy("saldoPendiente"),
-        orderBy("fecha", "asc")
-      )
+      collection(db, "pacientes", pacDoc.id, "presupuestos")
     );
-    if (presSnap.empty) continue;
-    const masAntigua = presSnap.docs[0].data();
-    const fechaDeuda = new Date(masAntigua.fecha);
+    const conSaldo = presSnap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as Record<string, unknown> & { id: string; fecha?: string }))
+      .filter((p) => saldoDePresupuesto(p) > 0)
+      .sort(
+        (a, b) =>
+          new Date(a.fecha || 0).getTime() -
+          new Date(b.fecha || 0).getTime()
+      );
+    if (conSaldo.length === 0) continue;
+    const masAntigua = conSaldo[0];
+    const fechaDeuda = new Date(masAntigua.fecha || Date.now());
     const diasDeuda = Math.floor(
       (ahora.getTime() - fechaDeuda.getTime()) / (1000 * 60 * 60 * 24)
     );

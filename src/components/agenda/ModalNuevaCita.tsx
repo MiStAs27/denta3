@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { obtenerConfigMorosos } from "@/lib/cobros-store";
+import { useToast } from "@/hooks/use-toast";
 
 const ESPECIALISTAS = [
   { id: "doc_1", nombre: "Dr. Carlos Ruiz" },
@@ -38,6 +40,7 @@ export default function ModalNuevaCita({
   onCitaCreada,
 }: ModalProps) {
   const { user } = useAuth(); // 🔥 Obtenemos el usuario y su tenantId
+  const { toast } = useToast();
 
   const [cargando, setCargando] = useState(false);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -92,6 +95,20 @@ export default function ModalNuevaCita({
 
     try {
       const pacienteSeleccionado = pacientes.find((p) => p.id === pacienteId);
+
+      if (pacienteSeleccionado && (pacienteSeleccionado as any).esMoroso) {
+        const config = await obtenerConfigMorosos(user.tenantId);
+        if (config.bloquearCitas) {
+          toast({
+            title: "Cita bloqueada",
+            description:
+              "Este paciente está marcado como moroso. No se puede agendar.",
+            variant: "destructive",
+          });
+          setCargando(false);
+          return;
+        }
+      }
 
       const nuevaCita = {
         tenantId: user.tenantId, // 🔥 INYECCIÓN DE LA CLÍNICA

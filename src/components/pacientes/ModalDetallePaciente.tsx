@@ -84,7 +84,7 @@ export default function ModalDetallePaciente({ paciente, isOpen, onClose }: Moda
               className="bg-[#2651A3] hover:bg-[#1a3a75]"
               onClick={() => {
                 onClose();
-                router.push(`/historia-clinica/${paciente.id}`); // Redirige a M06
+                router.push(`/pacientes/${paciente.id}`);
               }}
             >
               <Stethoscope className="w-4 h-4 mr-2" /> Ver Historial
@@ -94,7 +94,7 @@ export default function ModalDetallePaciente({ paciente, isOpen, onClose }: Moda
               className="bg-[#39ACB8] hover:bg-[#2c8892]"
               onClick={() => {
                 onClose();
-                router.push(`/cobros/${paciente.id}`); // Redirige a M07
+                router.push(`/cobros/${paciente.id}`);
               }}
             >
               <Wallet className="w-4 h-4 mr-2" /> Ver Cuenta

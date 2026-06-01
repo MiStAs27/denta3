@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Paciente } from "@/types/paciente";
+import { useAuth } from "@/context/AuthContext";
+import { verificarCiDuplicado } from "@/lib/paciente-utils";
+import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -19,6 +22,8 @@ interface ModalProps {
 
 export default function ModalEditarPaciente({ paciente, isOpen, onClose, onPacienteActualizado }: ModalProps) {
   const [cargando, setCargando] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -53,7 +58,21 @@ export default function ModalEditarPaciente({ paciente, isOpen, onClose, onPacie
 
   const actualizarPaciente = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!paciente?.id) return;
+    if (!paciente?.id || !user?.tenantId) return;
+
+    const duplicado = await verificarCiDuplicado(
+      user.tenantId,
+      formData.ci,
+      paciente.id
+    );
+    if (duplicado) {
+      toast({
+        title: "CI duplicado",
+        description: "Otro paciente ya tiene este carnet en tu consultorio.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setCargando(true);
 

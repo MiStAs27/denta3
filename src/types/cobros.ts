@@ -43,6 +43,8 @@ export interface Presupuesto {
   notas?: string;
   creadoPor: string;
   creadoEn: string;
+  abonado?: number;
+  saldoPendiente?: number;
 }
 // ─────────────────────────────────────────────────────────────
 // PAGOS
@@ -72,6 +74,8 @@ export interface Pago {
   fechaAnulacion?: string;
   creadoPor: string;
   creadoEn: string;
+  doctorId?: string;
+  doctorNombre?: string;
 }
 // ─────────────────────────────────────────────────────────────
 // CONFIGURACIÓN MOROSOS (por tenant)
