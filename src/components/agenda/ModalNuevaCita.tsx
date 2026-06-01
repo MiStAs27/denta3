@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// 🔥 Agregamos query y where para filtrar
 import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
 import { Paciente } from "@/types/paciente";
-import { useAuth } from "@/context/AuthContext"; // 🔥 Importamos el contexto de Auth
+import { useAuth } from "@/context/AuthContext"; 
 
 import {
   Dialog,
@@ -18,13 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { obtenerConfigMorosos } from "@/lib/cobros-store";
-import { useToast } from "@/hooks/use-toast";
-
-const ESPECIALISTAS = [
-  { id: "doc_1", nombre: "Dr. Carlos Ruiz" },
-  { id: "doc_2", nombre: "Dra. Ana López" },
-];
 
 interface ModalProps {
   isOpen: boolean;
@@ -39,44 +31,64 @@ export default function ModalNuevaCita({
   fechaPreseleccionada,
   onCitaCreada,
 }: ModalProps) {
-  const { user } = useAuth(); // 🔥 Obtenemos el usuario y su tenantId
-  const { toast } = useToast();
+  const { user } = useAuth(); 
 
   const [cargando, setCargando] = useState(false);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  
+  // 🔥 1. Nuevo estado para guardar los especialistas de la BD
+  const [especialistas, setEspecialistas] = useState<{ id: string; nombre: string }[]>([]);
 
   const [pacienteId, setPacienteId] = useState("");
-  const [especialistaId, setEspecialistaId] = useState(ESPECIALISTAS[0].id);
+  // 🔥 2. Inicializamos vacío para forzar la selección
+  const [especialistaId, setEspecialistaId] = useState(""); 
   const [horaInicio, setHoraInicio] = useState("09:00");
   const [horaFin, setHoraFin] = useState("09:30");
   const [motivo, setMotivo] = useState("");
 
   useEffect(() => {
-    const cargarPacientes = async () => {
-      // 🔥 Si no hay tenantId, no buscamos nada por seguridad
+    const cargarDatos = async () => {
       if (!user?.tenantId) return;
 
       try {
-        // 🔥 Solo traemos pacientes que pertenecen a ESTA clínica
-        const q = query(
+        // 🔥 3. Cargamos Pacientes de ESTA clínica
+        const qPacientes = query(
           collection(db, "pacientes"),
           where("tenantId", "==", user.tenantId),
         );
-        const querySnapshot = await getDocs(q);
+        const snapPacientes = await getDocs(qPacientes);
 
         const pacientesBD: Paciente[] = [];
-        querySnapshot.forEach((doc) => {
+        snapPacientes.forEach((doc) => {
           pacientesBD.push({ id: doc.id, ...doc.data() } as Paciente);
         });
         setPacientes(pacientesBD);
+
+        // 🔥 4. Cargamos Especialistas de ESTA clínica
+        // Asumimos que los doctores están en la colección "usuarios" con rol "ESPECIALISTA"
+        const qEspecialistas = query(
+          collection(db, "usuarios"),
+          where("tenantId", "==", user.tenantId),
+          where("rol", "==", "ESPECIALISTA")
+        );
+        const snapEspecialistas = await getDocs(qEspecialistas);
+
+        const especialistasBD: { id: string; nombre: string }[] = [];
+        snapEspecialistas.forEach((doc) => {
+          especialistasBD.push({
+            id: doc.id,
+            nombre: doc.data().nombre || "Sin Nombre"
+          });
+        });
+        setEspecialistas(especialistasBD);
+
       } catch (error) {
-        console.error("Error al cargar pacientes:", error);
+        console.error("Error al cargar datos:", error);
       }
     };
 
-    // Solo cargamos si el modal se abre y tenemos el tenantId listo
     if (isOpen && user?.tenantId) {
-      cargarPacientes();
+      cargarDatos();
     }
   }, [isOpen, user?.tenantId]);
 
@@ -84,6 +96,10 @@ export default function ModalNuevaCita({
     e.preventDefault();
     if (!pacienteId) {
       alert("Por favor, selecciona un paciente.");
+      return;
+    }
+    if (!especialistaId) {
+      alert("Por favor, selecciona un especialista.");
       return;
     }
     if (!user?.tenantId) {
@@ -96,22 +112,8 @@ export default function ModalNuevaCita({
     try {
       const pacienteSeleccionado = pacientes.find((p) => p.id === pacienteId);
 
-      if (pacienteSeleccionado && (pacienteSeleccionado as any).esMoroso) {
-        const config = await obtenerConfigMorosos(user.tenantId);
-        if (config.bloquearCitas) {
-          toast({
-            title: "Cita bloqueada",
-            description:
-              "Este paciente está marcado como moroso. No se puede agendar.",
-            variant: "destructive",
-          });
-          setCargando(false);
-          return;
-        }
-      }
-
       const nuevaCita = {
-        tenantId: user.tenantId, // 🔥 INYECCIÓN DE LA CLÍNICA
+        tenantId: user.tenantId, 
         pacienteId: pacienteId,
         pacienteNombre: pacienteSeleccionado?.nombre || "Paciente Desconocido",
         especialistaId: especialistaId,
@@ -124,9 +126,12 @@ export default function ModalNuevaCita({
 
       await addDoc(collection(db, "citas"), nuevaCita);
 
+      // Limpiamos los campos
       setMotivo("");
       setHoraInicio("09:00");
       setHoraFin("09:30");
+      setPacienteId("");
+      setEspecialistaId("");
       onCitaCreada();
       onClose();
     } catch (error) {
@@ -139,7 +144,6 @@ export default function ModalNuevaCita({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      {/* ... (Todo el HTML / JSX del modal se queda exactamente igual) ... */}
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#2651A3]">
@@ -181,7 +185,11 @@ export default function ModalNuevaCita({
               onChange={(e) => setEspecialistaId(e.target.value)}
               required
             >
-              {ESPECIALISTAS.map((doc) => (
+              {/* 🔥 5. Mostramos los especialistas reales de la BD */}
+              <option value="" disabled>
+                Seleccione un especialista...
+              </option>
+              {especialistas.map((doc) => (
                 <option key={doc.id} value={doc.id}>
                   {doc.nombre}
                 </option>
