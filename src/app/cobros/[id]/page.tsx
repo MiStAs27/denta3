@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -16,6 +16,13 @@ export default function CobrosPacientePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [paciente, setPaciente] = useState<any>(null);
+
+  const handleSaldoActualizado = useCallback(
+    (saldo: number) => {
+      setPaciente((p: any) => ({ ...p, saldoPendiente: saldo }));
+    },
+    [setPaciente]
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -67,9 +74,7 @@ export default function CobrosPacientePage() {
         pacienteId={pacienteId}
         pacienteNombre={paciente.nombre}
         esMoroso={paciente.esMoroso}
-        onSaldoActualizado={(saldo) =>
-          setPaciente((p: any) => ({ ...p, saldoPendiente: saldo }))
-        }
+        onSaldoActualizado={handleSaldoActualizado}
       />
     </div>
   );
