@@ -17,6 +17,7 @@ import { db } from "@/lib/firebase";
 import type {
   Presupuesto,
   Pago,
+  Cargo,
   ConfiguracionMorosos,
   ConfigComisionDoctor,
   RegistroComision,
@@ -36,6 +37,19 @@ export function generarNumeroPresupuesto(): string {
 export function generarNumeroPago(): string {
   const year = new Date().getFullYear();
   return `CP-${year}-${randomSeq()}`;
+}
+/** CG-2026-12345 — cargo por trabajo realizado */
+export function generarNumeroCargo(): string {
+  const year = new Date().getFullYear();
+  return `CG-${year}-${randomSeq()}`;
+}
+
+/** Presupuesto con ítems o esPlan = cotización, no cargo en cuenta */
+export function esPresupuestoPlan(data: Record<string, unknown>): boolean {
+  if (data.esPlan === true) return true;
+  if (data.esPlan === false) return false;
+  const items = data.items as unknown[] | undefined;
+  return Array.isArray(items) && items.length > 0;
 }
 /** Calcula la fecha de vencimiento sumando N días a hoy */
 export function calcularFechaVencimiento(vigenciaDias: number): string {
@@ -87,8 +101,11 @@ export async function crearPresupuesto(
   presupuesto: Omit<Presupuesto, "id">
 ): Promise<string> {
   const ref = collection(db, "pacientes", presupuesto.pacienteId, "presupuestos");
-  const docRef = await addDoc(ref, presupuesto);
-  await recalcularSaldoPaciente(presupuesto.pacienteId);
+  const docRef = await addDoc(ref, {
+    ...presupuesto,
+    esPlan: true,
+  });
+  // El presupuesto es solo plan estimado; no modifica la deuda real del paciente
   return docRef.id;
 }
 export async function actualizarEstadoPresupuesto(
@@ -105,8 +122,65 @@ export async function obtenerPresupuestosPaciente(
   const ref = collection(db, "pacientes", pacienteId, "presupuestos");
   const q = query(ref, orderBy("fecha", "desc"));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Presupuesto));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as Presupuesto))
+    .filter((p) => esPresupuestoPlan(p as unknown as Record<string, unknown>));
 }
+
+/** Cargos reales + registros legacy (presupuestos viejos sin plan) */
+export async function obtenerCargosPaciente(
+  pacienteId: string
+): Promise<Cargo[]> {
+  const cargos: Cargo[] = [];
+
+  const cargosSnap = await getDocs(
+    collection(db, "pacientes", pacienteId, "cargos")
+  );
+  cargosSnap.docs.forEach((d) => {
+    cargos.push({ id: d.id, ...d.data() } as Cargo);
+  });
+
+  const presSnap = await getDocs(
+    collection(db, "pacientes", pacienteId, "presupuestos")
+  );
+  presSnap.docs.forEach((d) => {
+    const data = d.data();
+    if (esPresupuestoPlan(data)) return;
+    const monto = (data.total as number) ?? (data.costoTotal as number) ?? 0;
+    if (monto <= 0) return;
+    cargos.push({
+      id: d.id,
+      numero: (data.numero as string) || `LEG-${d.id.slice(0, 6)}`,
+      tenantId: data.tenantId as string,
+      pacienteId,
+      pacienteNombre: (data.pacienteNombre as string) || "",
+      fecha: (data.fecha as string) || new Date().toISOString(),
+      concepto:
+        (data.tratamiento as string) ||
+        (data.items as { nombre: string }[])?.map((i) => i.nombre).join(", ") ||
+        "Tratamiento",
+      monto,
+      estado: "Activo",
+      creadoPor: (data.creadoPor as string) || "Sistema",
+      creadoEn: (data.creadoEn as string) || (data.fecha as string),
+    });
+  });
+
+  cargos.sort(
+    (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+  );
+  return cargos;
+}
+
+export async function registrarCargo(
+  cargo: Omit<Cargo, "id">
+): Promise<string> {
+  const ref = collection(db, "pacientes", cargo.pacienteId, "cargos");
+  const docRef = await addDoc(ref, cargo);
+  await recalcularSaldoPaciente(cargo.pacienteId);
+  return docRef.id;
+}
+
 // ─────────────────────────────────────────────────────────────
 // PAGOS — transaccional: registra pago + actualiza saldo en el doc raíz
 // ─────────────────────────────────────────────────────────────
@@ -137,10 +211,11 @@ export async function registrarPago(
           ? presData.abonado + pago.montoNeto
           : pago.montoNeto;
         const nuevoSaldo = Math.max(0, totalPres - nuevoAbonado);
+        const esPlan = esPresupuestoPlan(presSnap.data());
         transaction.update(presRef, {
           abonado: nuevoAbonado,
           saldoPendiente: nuevoSaldo,
-          estado: nuevoSaldo <= 0 ? "Aceptado" : presData.estado,
+          ...(esPlan && nuevoSaldo <= 0 ? { estado: "Aceptado" as const } : {}),
         });
       }
     }
@@ -253,13 +328,20 @@ export async function obtenerPagosPaciente(pacienteId: string): Promise<Pago[]> 
 export async function recalcularSaldoPaciente(
   pacienteId: string
 ): Promise<number> {
-  const presSnap = await getDocs(
-    collection(db, "pacientes", pacienteId, "presupuestos")
-  );
-  let saldoTotal = 0;
-  presSnap.docs.forEach((d) => {
-    saldoTotal += saldoDePresupuesto(d.data());
-  });
+  const [cargos, pagos] = await Promise.all([
+    obtenerCargosPaciente(pacienteId),
+    obtenerPagosPaciente(pacienteId),
+  ]);
+
+  const totalCargos = cargos
+    .filter((c) => c.estado === "Activo")
+    .reduce((acc, c) => acc + c.monto, 0);
+  const totalPagado = pagos
+    .filter((p) => p.estado === "Activo")
+    .reduce((acc, p) => acc + p.montoNeto, 0);
+
+  const saldoTotal = Math.max(0, totalCargos - totalPagado);
+
   const pacienteRef = doc(db, "pacientes", pacienteId);
   await updateDoc(pacienteRef, {
     saldoPendiente: saldoTotal,
@@ -268,33 +350,32 @@ export async function recalcularSaldoPaciente(
   return saldoTotal;
 }
 // ─────────────────────────────────────────────────────────────
-// ESTADO DE CUENTA — movimientos unificados (presupuestos + pagos)
+// ESTADO DE CUENTA — solo lo realizado (cargos + pagos)
 // ─────────────────────────────────────────────────────────────
 export async function obtenerMovimientosCuenta(
   pacienteId: string
 ): Promise<MovimientoCuenta[]> {
-  const [presupuestos, pagos] = await Promise.all([
-    obtenerPresupuestosPaciente(pacienteId),
+  const [cargos, pagos] = await Promise.all([
+    obtenerCargosPaciente(pacienteId),
     obtenerPagosPaciente(pacienteId),
   ]);
   const movimientos: MovimientoCuenta[] = [];
-  // Cargos (presupuestos)
-  presupuestos.forEach((p) => {
-    const raw = p as Presupuesto & Record<string, unknown>;
-    const total = p.total ?? (raw.costoTotal as number) ?? 0;
+
+  cargos.forEach((c) => {
+    if (c.estado === "Anulado") return;
     movimientos.push({
-      id: p.id!,
+      id: c.id!,
       tipo: "cargo",
-      fecha: p.fecha,
-      concepto: conceptoPresupuesto(raw),
-      numero: p.numero || "SIN-NUM",
-      monto: total,
+      fecha: c.fecha,
+      concepto: c.concepto,
+      numero: c.numero,
+      monto: c.monto,
       saldoAcumulado: 0,
-      estado: p.estado || "Pendiente",
+      estado: c.estado,
       anulado: false,
     });
   });
-  // Pagos
+
   pagos.forEach((p) => {
     movimientos.push({
       id: p.id!,
@@ -381,20 +462,36 @@ export async function evaluarMorososTenant(
   for (const pacDoc of pacientesSnap.docs) {
     const pac = pacDoc.data();
     if (pac.morosoManual) continue;
-    const presSnap = await getDocs(
-      collection(db, "pacientes", pacDoc.id, "presupuestos")
+    const cargosSnap = await getDocs(
+      collection(db, "pacientes", pacDoc.id, "cargos")
     );
-    const conSaldo = presSnap.docs
-      .map((d) => ({ id: d.id, ...d.data() } as Record<string, unknown> & { id: string; fecha?: string }))
-      .filter((p) => saldoDePresupuesto(p) > 0)
+    const cargosConFecha = cargosSnap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as Record<string, unknown> & { id: string }))
+      .filter((c) => c.estado !== "Anulado")
       .sort(
         (a, b) =>
-          new Date(a.fecha || 0).getTime() -
-          new Date(b.fecha || 0).getTime()
+          new Date((a.fecha as string) || 0).getTime() -
+          new Date((b.fecha as string) || 0).getTime()
       );
-    if (conSaldo.length === 0) continue;
-    const masAntigua = conSaldo[0];
-    const fechaDeuda = new Date(masAntigua.fecha || Date.now());
+
+    let fechaDeuda: Date;
+    if (cargosConFecha.length > 0) {
+      fechaDeuda = new Date(cargosConFecha[0].fecha as string);
+    } else {
+      const presSnap = await getDocs(
+        collection(db, "pacientes", pacDoc.id, "presupuestos")
+      );
+      const legacyCargo = presSnap.docs
+        .map((d) => d.data())
+        .filter((p) => !esPresupuestoPlan(p) && saldoDePresupuesto(p) > 0)
+        .sort(
+          (a, b) =>
+            new Date((a.fecha as string) || 0).getTime() -
+            new Date((b.fecha as string) || 0).getTime()
+        );
+      if (legacyCargo.length === 0) continue;
+      fechaDeuda = new Date(legacyCargo[0].fecha as string);
+    }
     const diasDeuda = Math.floor(
       (ahora.getTime() - fechaDeuda.getTime()) / (1000 * 60 * 60 * 24)
     );

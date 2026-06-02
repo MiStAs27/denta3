@@ -179,6 +179,7 @@ export default function ModalNuevoPresupuesto({
         notas,
         creadoPor: user.nombre || user.email || "Sistema",
         creadoEn: new Date().toISOString(),
+        esPlan: true,
         abonado: 0,
         saldoPendiente: total,
       };

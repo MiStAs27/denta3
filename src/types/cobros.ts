@@ -34,6 +34,8 @@ export interface Presupuesto {
   vigenciaDias: number;
   fechaVencimiento: string; // ISO (fecha + vigencia)
   estado: EstadoPresupuesto;
+  /** true = plan estimado (no es un cargo en cuenta); false/omitido en datos viejos = cargo */
+  esPlan?: boolean;
   items: ItemPresupuesto[];
   subtotal: number;
   descuento: number;        // monto real descontado
@@ -45,6 +47,26 @@ export interface Presupuesto {
   creadoEn: string;
   abonado?: number;
   saldoPendiente?: number;
+}
+// ─────────────────────────────────────────────────────────────
+// CARGOS — lo realmente realizado / facturado (aparece en estado de cuenta)
+// ─────────────────────────────────────────────────────────────
+export type EstadoCargo = "Activo" | "Anulado";
+
+export interface Cargo {
+  id?: string;
+  numero: string;           // CG-YYYY-XXXXX
+  tenantId: string;
+  pacienteId: string;
+  pacienteNombre: string;
+  fecha: string;            // ISO con hora
+  concepto: string;
+  monto: number;
+  presupuestoId?: string;
+  presupuestoNumero?: string;
+  estado: EstadoCargo;
+  creadoPor: string;
+  creadoEn: string;
 }
 // ─────────────────────────────────────────────────────────────
 // PAGOS
