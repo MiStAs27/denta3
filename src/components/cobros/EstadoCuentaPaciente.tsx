@@ -72,6 +72,8 @@ export default function EstadoCuentaPaciente({
 
   useEffect(() => {
     cargarDatos();
+    const interval = setInterval(cargarDatos, 5 * 60 * 1000); // Refrescar cada 5 minutos
+    return () => clearInterval(interval);
   }, [cargarDatos]);
 
   const saldoActual =
