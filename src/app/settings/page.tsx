@@ -36,6 +36,8 @@ import { useToast } from "@/hooks/use-toast";
 
 // 🔒 Importamos tu tipo de rol oficial
 import { RolUsuario } from "@/types/roles";
+import ConfigMorososTab from "@/components/cobros/ConfigMorososTab";
+import ConfigComisionesTab from "@/components/cobros/ConfigComisionesTab";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -318,6 +320,18 @@ export default function SettingsPage() {
               className={`px-4 py-2 font-semibold text-sm border-b-2 transition-colors ${tabActiva === "personal" ? "border-[#39ACB8] text-[#39ACB8]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
             >
               Gestión de Personal
+            </button>
+            <button
+              onClick={() => setTabActiva("morosos")}
+              className={`px-4 py-2 font-semibold text-sm border-b-2 transition-colors ${tabActiva === "morosos" ? "border-[#39ACB8] text-[#39ACB8]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            >
+              Morosos
+            </button>
+            <button
+              onClick={() => setTabActiva("comisiones")}
+              className={`px-4 py-2 font-semibold text-sm border-b-2 transition-colors ${tabActiva === "comisiones" ? "border-[#39ACB8] text-[#39ACB8]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            >
+              Comisiones
             </button>
           </>
         )}
@@ -652,6 +666,10 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+        {tabActiva === "morosos" && esAdmin && <ConfigMorososTab />}
+
+        {tabActiva === "comisiones" && esAdmin && <ConfigComisionesTab />}
       </div>
     </div>
   );

@@ -313,7 +313,11 @@ export default function FichaPacientePage() {
         )}
         {tabActiva === "odontograma" && (
           <div className="animate-in fade-in">
+<<<<<<< HEAD
             <Odontograma/>
+=======
+            <Odontograma patientId={pacienteIdDemo} />
+>>>>>>> 62a888eda8d12df744a6d3fe1136322396c601ef
           </div>
         )}
 

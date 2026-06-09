@@ -5,6 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { verificarCiDuplicado } from "@/lib/paciente-utils";
+import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,7 @@ interface ModalProps {
 export default function ModalNuevoPaciente({ isOpen, onClose, onPacienteCreado }: ModalProps) {
   const [cargando, setCargando] = useState(false);
 const { user } = useAuth();
+  const { toast } = useToast();
   // Estado unificado para el formulario
   const [formData, setFormData] = useState({
     nombre: "", ci: "", celular: "", edad: "", fechaNacimiento: "", domicilio: "", lugarTrabajo: "",
@@ -40,11 +43,22 @@ const { user } = useAuth();
       return;
     }
 
+    const duplicado = await verificarCiDuplicado(user.tenantId, formData.ci);
+    if (duplicado) {
+      toast({
+        title: "CI duplicado",
+        description: "Ya existe un paciente con este carnet en tu consultorio.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCargando(true);
 
     try {
       const nuevoPaciente = {
         tenantId: user.tenantId, // <--- NUEVO: Añadimos la llave maestra del consultorio
+        saldoPendiente: 0,
         nombre: formData.nombre,
         ci: formData.ci,
         celular: Number(formData.celular),

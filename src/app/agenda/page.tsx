@@ -28,20 +28,6 @@ interface CitaUI extends Omit<Cita, "id"> {
   fechaReprogramada?: string;
 }
 
-const ESPECIALISTAS = [
-  {
-    id: "doc_1",
-    nombre: "Dr. Carlos Ruiz",
-    bg: "bg-blue-100",
-    text: "text-blue-700",
-  },
-  {
-    id: "doc_2",
-    nombre: "Dra. Ana López",
-    bg: "bg-purple-100",
-    text: "text-purple-700",
-  },
-];
 
 export default function AgendaPage() {
   const { user } = useAuth(); // 🔥 Extraemos el usuario actual
@@ -68,34 +54,45 @@ export default function AgendaPage() {
       const endStr = format(endDate, "yyyy-MM-dd");
 
       // 🔥 CONSULTA MULTI-TENANT: Buscamos por clínica Y por rango de fechas
-      const q = query(
-        collection(db, "citas"),
+      // 1. Obtener Doctores Reales
+      const qEspecialistas = query(
+        collection(db, "usuarios"),
+        where("tenantId", "==", user.tenantId),
+        where("rol", "==", "ESPECIALISTA")
+      );
+      const snapEspecialistas = await getDocs(qEspecialistas);
+      const mapaDoctores: Record<string, string> = {};
+      snapEspecialistas.forEach((doc) => {
+        mapaDoctores[doc.id] = doc.data().nombre || "Especialista Desconocido";
+      });
+
+      // 2. Consulta de citas sin filtro de especialistaId
+      const condiciones = [
         where("tenantId", "==", user.tenantId), // <-- La llave del candado
         where("fecha", ">=", startStr),
         where("fecha", "<=", endStr),
-      );
+      ];
+
+      const q = query(collection(db, "citas"), ...condiciones);
 
       const snapshot = await getDocs(q);
 
-      const citas: CitaUI[] = [];
+      let citas: CitaUI[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data() as CitaUI;
         if (data.estado === "programada") data.estado = "pendiente";
 
-        // 🛡️ El Escudo: Corta el string en la 'T' si existe, si no, lo deja igual
-        const fechaLimpia = data.fecha ? data.fecha.split('T')[0].trim() : "";
-        const docInfo =
-          ESPECIALISTAS.find((e) => e.id === data.especialistaId) ||
-          ESPECIALISTAS[0];
-          
-        // Guardamos la cita en el estado de React pero con la fecha ya normalizada a YYYY-MM-DD
         citas.push({ 
           ...data, 
           id: doc.id, 
-          especialistaNombre: docInfo.nombre,
-          fecha: fechaLimpia // <-- Aquí aplicamos el string limpio de 10 caracteres
+          especialistaNombre: mapaDoctores[data.especialistaId] || 'Especialista Desconocido' 
         });
       });
+
+      // 3. Filtro en Memoria
+      if (user.rol === "ESPECIALISTA") {
+        citas = citas.filter((cita) => cita.especialistaId === user.uid);
+      }
 
       setCitasDelMes(citas);
     } catch (error) {

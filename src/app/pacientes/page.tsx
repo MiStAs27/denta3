@@ -188,7 +188,11 @@ export default function PacientesPage() {
                   </TableCell>
                   <TableCell>{paciente.ci}</TableCell>
                   <TableCell>
-                    {paciente.saldoPendiente > 0 ? (
+                    {(paciente as any).esMoroso ? (
+                      <span className="bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold uppercase">
+                        Moroso
+                      </span>
+                    ) : paciente.saldoPendiente > 0 ? (
                       <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold uppercase">
                         Pendiente
                       </span>

@@ -27,21 +27,33 @@ export default function ValidacionPagosPage() {
   const [modalFotoOpen, setModalFotoOpen] = useState(false);
   const [fotoActual, setFotoActual] = useState<string | null>(null);
 
+  const normalizarEstado = (valor: string) =>
+    String(valor || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
   const cargarPagosPendientes = async () => {
     setCargando(true);
     try {
-      // 🔒 Solo traemos los que están pendientes de revisión
-      const q = query(collection(db, "pagos_pendientes"), where("estado", "==", "Pendiente de Aprobación"));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(collection(db, "pagos_pendientes"));
       const lista: any[] = [];
-      snapshot.forEach((doc) => {
-        lista.push({ id: doc.id, ...doc.data() });
+
+      snapshot.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const estado = normalizarEstado(data.estado);
+
+        if (estado.includes("pendiente") && !estado.includes("aprobado") && !estado.includes("rechazado")) {
+          lista.push({ id: docSnapshot.id, ...data });
+        }
       });
-      // Ordenar por fecha de solicitud (los más antiguos primero)
-      lista.sort((a, b) => new Date(a.fechaSolicitud).getTime() - new Date(b.fechaSolicitud).getTime());
+
+      lista.sort((a, b) => new Date(a.fechaSolicitud || 0).getTime() - new Date(b.fechaSolicitud || 0).getTime());
       setPagos(lista);
     } catch (error) {
       console.error("Error cargando pagos:", error);
+      toast({ title: "No se pudieron cargar los pagos pendientes", variant: "destructive" });
     } finally {
       setCargando(false);
     }
@@ -98,7 +110,7 @@ export default function ValidacionPagosPage() {
       });
 
       toast({ title: "¡Pago aprobado! La clínica ya tiene acceso a su sistema." });
-      cargarPagosPendientes();
+      await cargarPagosPendientes();
       setModalFotoOpen(false);
     } catch (error) {
       console.error("Error aprobando pago:", error);
@@ -115,7 +127,7 @@ export default function ValidacionPagosPage() {
         estado: "Rechazado"
       });
       toast({ title: "Pago rechazado." });
-      cargarPagosPendientes();
+      await cargarPagosPendientes();
     } catch (error) {
       console.error("Error:", error);
     }

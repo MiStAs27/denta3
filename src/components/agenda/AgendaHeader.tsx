@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { format, addMonths, subMonths } from "date-fns";
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,18 @@ export default function AgendaHeader({
   setVista,
   onNuevaCita
 }: AgendaHeaderProps) {
-  const mesAnterior = () => onFechaSeleccionada(subMonths(fechaSeleccionada, 1));
-  const mesSiguiente = () => onFechaSeleccionada(addMonths(fechaSeleccionada, 1));
+  const moverAnterior = () => {
+    if (vista === 'mes') onFechaSeleccionada(subMonths(fechaSeleccionada, 1));
+    else if (vista === 'semana') onFechaSeleccionada(subWeeks(fechaSeleccionada, 1));
+    else if (vista === 'dia') onFechaSeleccionada(subDays(fechaSeleccionada, 1));
+  };
+
+  const moverSiguiente = () => {
+    if (vista === 'mes') onFechaSeleccionada(addMonths(fechaSeleccionada, 1));
+    else if (vista === 'semana') onFechaSeleccionada(addWeeks(fechaSeleccionada, 1));
+    else if (vista === 'dia') onFechaSeleccionada(addDays(fechaSeleccionada, 1));
+  };
+
   const hoy = () => onFechaSeleccionada(new Date());
 
   return (
@@ -78,10 +88,10 @@ export default function AgendaHeader({
             {format(fechaSeleccionada, "MMMM yyyy", { locale: es })}
           </h2>
           <div className="flex items-center gap-0.5 bg-white p-0.5 rounded-lg border border-slate-200 shadow-sm">
-            <Button variant="ghost" size="icon" onClick={mesAnterior} className="h-7 w-7 rounded-md hover:bg-slate-50 hover:shadow-sm transition-all text-slate-500">
+            <Button variant="ghost" size="icon" onClick={moverAnterior} className="h-7 w-7 rounded-md hover:bg-slate-50 hover:shadow-sm transition-all text-slate-500">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={mesSiguiente} className="h-7 w-7 rounded-md hover:bg-slate-50 hover:shadow-sm transition-all text-slate-500">
+            <Button variant="ghost" size="icon" onClick={moverSiguiente} className="h-7 w-7 rounded-md hover:bg-slate-50 hover:shadow-sm transition-all text-slate-500">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

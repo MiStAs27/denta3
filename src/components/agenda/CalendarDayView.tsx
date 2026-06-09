@@ -14,6 +14,7 @@ interface CitaExtendida {
   motivo: string;
   fecha: string;
   estado: string;
+  especialistaNombre?: string;
 }
 
 interface CalendarDayViewProps {
@@ -94,7 +95,7 @@ export default function CalendarDayView({
                         </span>
                         <span className="inline-flex items-center text-xs text-slate-500 font-medium">
                           <User className="w-3.5 h-3.5 mr-1" />
-                          Dr. Asignado
+                          {cita.especialistaNombre || 'Dr. Asignado'}
                         </span>
                       </div>
                     </div>
