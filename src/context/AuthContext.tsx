@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (user.estado === "Suspendido" && user.rol !== "SUPER_ADMIN") {
           if (!isSubscriptionRoute && !isPublicRoute) {
             router.push("/suscripcion");
-            return; // Detenemos la ejecución para que no evalúe más reglas
+            return;
           }
         }
 

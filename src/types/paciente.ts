@@ -23,7 +23,7 @@ export interface Paciente {
   fechaCreacion: string; // ISO String o Timestamp de Firebase
   edad: number;
   fechaNacimiento: string; // YYYY-MM-DD
-  celular: string;
+  celular: number;
   contactoEmergencia: ContactoEmergencia;
   antecedentes: AntecedentesPatologicos;
 }

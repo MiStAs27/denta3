@@ -33,7 +33,7 @@ export default function ModalEditarPaciente({ paciente, isOpen, onClose, onPacie
       setFormData({
         nombre: paciente.nombre,
         ci: paciente.ci,
-        celular: paciente.celular,
+        celular: paciente.celular.toString(),
         edad: paciente.edad.toString(),
         fechaNacimiento: paciente.fechaNacimiento,
         domicilio: paciente.domicilio,
@@ -65,7 +65,7 @@ export default function ModalEditarPaciente({ paciente, isOpen, onClose, onPacie
       const datosActualizados = {
         nombre: formData.nombre,
         ci: formData.ci,
-        celular: formData.celular,
+        celular: Number(formData.celular),
         edad: Number(formData.edad),
         fechaNacimiento: formData.fechaNacimiento,
         domicilio: formData.domicilio,
@@ -73,7 +73,7 @@ export default function ModalEditarPaciente({ paciente, isOpen, onClose, onPacie
         contactoEmergencia: {
           nombre: formData.emergenciaNombre,
           parentesco: formData.emergenciaParentesco,
-          celular: formData.emergenciaCelular
+          celular: Number(formData.emergenciaCelular)
         },
         antecedentes: {
           alergias: formData.alergias,

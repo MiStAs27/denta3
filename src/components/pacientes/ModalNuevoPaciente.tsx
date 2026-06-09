@@ -47,7 +47,7 @@ const { user } = useAuth();
         tenantId: user.tenantId, // <--- NUEVO: Añadimos la llave maestra del consultorio
         nombre: formData.nombre,
         ci: formData.ci,
-        celular: formData.celular,
+        celular: Number(formData.celular),
         edad: Number(formData.edad),
         fechaNacimiento: formData.fechaNacimiento,
         domicilio: formData.domicilio,
@@ -106,7 +106,7 @@ const { user } = useAuth();
                   </div>
                   <div className="space-y-1">
                     <Label>Carnet de Identidad (CI) *</Label>
-                    <Input name="ci" value={formData.ci} onChange={handleChange} required />
+                    <Input type="number" name="ci" value={formData.ci} onChange={handleChange} required />
                   </div>
                   <div className="space-y-1">
                     <Label>Celular *</Label>

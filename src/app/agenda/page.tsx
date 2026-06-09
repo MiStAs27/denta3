@@ -80,12 +80,32 @@ export default function AgendaPage() {
       const citas: CitaUI[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data() as CitaUI;
-        if (data.estado === "programada") data.estado = "pendiente";
 
+        // 1. BLINDAJE DE FECHA: Si viene como "2026-06-09T00:00:00Z", la recortamos a "2026-06-09"
+        if (data.fecha && data.fecha.includes("T")) {
+          data.fecha = data.fecha.split("T")[0];
+        }
+
+        // 2. TOLERANCIA A PACIENTES: Si el bot no registró nombre o ID, evitamos que rompa la UI
+        if (!data.pacienteNombre) {
+          data.pacienteNombre = "Paciente sin registrar";
+        }
+        
+        // Estandarizamos el estado por si viene en mayúsculas del bot
+        if (data.estado === "programada" || data.estado === "pendiente") {
+          data.estado = "pendiente";
+        }
+
+        // Buscamos el especialista asignado o usamos el primero por defecto
         const docInfo =
           ESPECIALISTAS.find((e) => e.id === data.especialistaId) ||
           ESPECIALISTAS[0];
-        citas.push({ ...data, id: doc.id, especialistaNombre: docInfo.nombre });
+
+        citas.push({ 
+          ...data, 
+          id: doc.id, 
+          especialistaNombre: docInfo.nombre 
+        });
       });
 
       setCitasDelMes(citas);
