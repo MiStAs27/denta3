@@ -621,7 +621,7 @@ export default function LandingPage() {
               {/* PLAN 3 MESES */}
               <div className="bg-white p-8 rounded-2xl border-2 border-sky-400 shadow-md relative transition-all duration-300 hover:-translate-y-2">
                 <h4 className="text-xl font-bold text-sky-600 mb-2">
-                  Trimestral
+                  Semestral
                 </h4>
                 <div className="text-3xl font-extrabold text-slate-900 mb-6">
                   {precios.mes3} Bs.
