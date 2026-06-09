@@ -51,6 +51,13 @@ export default function ConfigMorososTab() {
         title: "Evaluación completada",
         description: `${marcados} paciente(s) marcados como morosos.`,
       });
+    } catch (error: any) {
+      console.error("Error al evaluar morosos:", error);
+      toast({
+        title: "Error al evaluar morosos",
+        description: error.message || "Ocurrió un error inesperado.",
+        variant: "destructive",
+      });
     } finally {
       setEvaluando(false);
     }

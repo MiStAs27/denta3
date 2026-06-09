@@ -84,6 +84,13 @@ export default function CobrosPage() {
         description: `${marcados} paciente(s) marcados como morosos.`,
       });
       cargarPacientes();
+    } catch (error: any) {
+      console.error("Error al evaluar morosos:", error);
+      toast({
+        title: "Error al evaluar morosos",
+        description: error.message || "Ocurrió un error inesperado.",
+        variant: "destructive",
+      });
     } finally {
       setEvaluando(false);
     }

@@ -48,11 +48,11 @@ export default function DashboardPage() {
         let ingresosDelMes = 0;
         const listaDeudores: any[] = [];
 
-        // Optimizamos usando Promise.all para cargar presupuestos rápido
-        const promesasPresupuestos = pacientesSnapshot.docs.map(doc => 
-          getDocs(collection(db, "pacientes", doc.id, "presupuestos"))
+        // Optimizamos usando Promise.all para cargar pagos rápido y calcular ingresos reales
+        const promesasPagos = pacientesSnapshot.docs.map(doc => 
+          getDocs(collection(db, "pacientes", doc.id, "pagos"))
         );
-        const resultadosPresupuestos = await Promise.all(promesasPresupuestos);
+        const resultadosPagos = await Promise.all(promesasPagos);
 
         pacientesSnapshot.docs.forEach((doc, index) => {
           const data = doc.data();
@@ -74,13 +74,16 @@ export default function DashboardPage() {
             }
           }
 
-          // Sumar ingresos del mes actual (Para el Admin)
-          resultadosPresupuestos[index].forEach((presupuestoDoc) => {
-            const presData = presupuestoDoc.data();
-            if (presData.abonado && presData.fechaCreacion) {
-              const fechaAbono = new Date(presData.fechaCreacion);
-              if (fechaAbono.getMonth() === mesActual && fechaAbono.getFullYear() === añoActual) {
-                ingresosDelMes += presData.abonado;
+          // Sumar ingresos reales del mes actual (Para el Admin)
+          resultadosPagos[index].forEach((pagoDoc) => {
+            const pagoData = pagoDoc.data();
+            if (pagoData.estado === "Activo" && pagoData.montoNeto && pagoData.fecha) {
+              const fechaAbono = new Date(pagoData.fecha);
+              if (
+                fechaAbono.getMonth() === mesActual &&
+                fechaAbono.getFullYear() === añoActual
+              ) {
+                ingresosDelMes += pagoData.montoNeto;
               }
             }
           });

@@ -189,41 +189,44 @@ export async function registrarPago(
 ): Promise<string> {
   let pagoId = "";
   await runTransaction(db, async (transaction) => {
-    // 1. Crear el documento de pago
-    const pagosRef = collection(db, "pacientes", pago.pacienteId, "pagos");
-    const pagoDocRef = doc(pagosRef);
-    pagoId = pagoDocRef.id;
-    transaction.set(pagoDocRef, pago);
-    // 2. Si hay presupuesto asociado, actualizamos su saldo
+    // 1. Lectura del presupuesto (si existe) antes de cualquier escritura
+    let presSnap;
+    let presRef;
     if (pago.presupuestoId) {
-      const presRef = doc(
+      presRef = doc(
         db,
         "pacientes",
         pago.pacienteId,
         "presupuestos",
         pago.presupuestoId
       );
-      const presSnap = await transaction.get(presRef);
-      if (presSnap.exists()) {
-        const presData = presSnap.data() as Presupuesto & { abonado?: number; costoTotal?: number };
-        const totalPres = presData.total ?? presData.costoTotal ?? 0;
-        const nuevoAbonado = presData.abonado
-          ? presData.abonado + pago.montoNeto
-          : pago.montoNeto;
-        const nuevoSaldo = Math.max(0, totalPres - nuevoAbonado);
-        const esPlan = esPresupuestoPlan(presSnap.data());
-        transaction.update(presRef, {
-          abonado: nuevoAbonado,
-          saldoPendiente: nuevoSaldo,
-          ...(esPlan && nuevoSaldo <= 0 ? { estado: "Aceptado" as const } : {}),
-        });
-      }
+      presSnap = await transaction.get(presRef);
     }
-    // 3. Actualizar saldoPendiente en el doc raíz del paciente
-    // (se recalcula leyendo todos los presupuestos con saldo > 0)
-    // Nota: el recalculado completo lo hacemos en recalcularSaldoPaciente
+
+    // 2. Realizar escrituras
+    // Crear el documento de pago
+    const pagosRef = collection(db, "pacientes", pago.pacienteId, "pagos");
+    const pagoDocRef = doc(pagosRef);
+    pagoId = pagoDocRef.id;
+    transaction.set(pagoDocRef, pago);
+
+    // Actualizar presupuesto si existe
+    if (presRef && presSnap && presSnap.exists()) {
+      const presData = presSnap.data() as Presupuesto & { abonado?: number; costoTotal?: number };
+      const totalPres = presData.total ?? presData.costoTotal ?? 0;
+      const nuevoAbonado = presData.abonado
+        ? presData.abonado + pago.montoNeto
+        : pago.montoNeto;
+      const nuevoSaldo = Math.max(0, totalPres - nuevoAbonado);
+      const esPlan = esPresupuestoPlan(presSnap.data());
+      transaction.update(presRef, {
+        abonado: nuevoAbonado,
+        saldoPendiente: nuevoSaldo,
+        ...(esPlan && nuevoSaldo <= 0 ? { estado: "Aceptado" as const } : {}),
+      });
+    }
   });
-  // 4. Recalculo completo del saldo (fuera de la transaction por limitación de lecturas)
+  // 3. Recalculo completo del saldo (fuera de la transaction por limitación de lecturas)
   await recalcularSaldoPaciente(pago.pacienteId);
   await registrarComisionAutomatica(pago, pagoId);
   return pagoId;
@@ -265,7 +268,23 @@ export async function anularPago(
   const pagoSnap = await getDoc(pagoRef);
   if (!pagoSnap.exists()) throw new Error("Pago no encontrado");
   const pago = pagoSnap.data() as Pago;
+
   await runTransaction(db, async (transaction) => {
+    // 1. Lectura del presupuesto (si existe) antes de cualquier escritura
+    let presSnap;
+    let presRef;
+    if (pago.presupuestoId) {
+      presRef = doc(
+        db,
+        "pacientes",
+        pacienteId,
+        "presupuestos",
+        pago.presupuestoId
+      );
+      presSnap = await transaction.get(presRef);
+    }
+
+    // 2. Realizar escrituras
     // Marcar pago como anulado
     transaction.update(pagoRef, {
       estado: "Anulado",
@@ -273,30 +292,21 @@ export async function anularPago(
       anuladoPor,
       fechaAnulacion: new Date().toISOString(),
     });
-    // Revertir el saldo del presupuesto asociado si existe
-    if (pago.presupuestoId) {
-      const presRef = doc(
-        db,
-        "pacientes",
-        pacienteId,
-        "presupuestos",
-        pago.presupuestoId
+
+    // Revertir el saldo del presupuesto asociado si existe y es válido
+    if (presRef && presSnap && presSnap.exists()) {
+      const presData = presSnap.data() as Presupuesto & { abonado?: number; costoTotal?: number };
+      const totalPres = presData.total ?? presData.costoTotal ?? 0;
+      const nuevoAbonado = Math.max(
+        0,
+        (presData.abonado || 0) - pago.montoNeto
       );
-      const presSnap = await transaction.get(presRef);
-      if (presSnap.exists()) {
-        const presData = presSnap.data() as Presupuesto & { abonado?: number; costoTotal?: number };
-        const totalPres = presData.total ?? presData.costoTotal ?? 0;
-        const nuevoAbonado = Math.max(
-          0,
-          (presData.abonado || 0) - pago.montoNeto
-        );
-        const nuevoSaldo = totalPres - nuevoAbonado;
-        transaction.update(presRef, {
-          abonado: nuevoAbonado,
-          saldoPendiente: nuevoSaldo,
-          estado: nuevoSaldo > 0 ? "Pendiente" : "Aceptado",
-        });
-      }
+      const nuevoSaldo = totalPres - nuevoAbonado;
+      transaction.update(presRef, {
+        abonado: nuevoAbonado,
+        saldoPendiente: nuevoSaldo,
+        estado: nuevoSaldo > 0 ? "Pendiente" : "Aceptado",
+      });
     }
   });
   await recalcularSaldoPaciente(pacienteId);
@@ -453,13 +463,17 @@ export async function evaluarMorososTenant(
   const pacientesSnap = await getDocs(
     query(
       collection(db, "pacientes"),
-      where("tenantId", "==", tenantId),
-      where("saldoPendiente", ">", config.montoMinimo)
+      where("tenantId", "==", tenantId)
     )
   );
+  const pacientesFiltrados = pacientesSnap.docs.filter((d) => {
+    const data = d.data();
+    return (data.saldoPendiente || 0) > config.montoMinimo;
+  });
+
   let marcados = 0;
   const ahora = new Date();
-  for (const pacDoc of pacientesSnap.docs) {
+  for (const pacDoc of pacientesFiltrados) {
     const pac = pacDoc.data();
     if (pac.morosoManual) continue;
     const cargosSnap = await getDocs(

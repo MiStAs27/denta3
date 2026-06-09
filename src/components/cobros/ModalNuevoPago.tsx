@@ -148,28 +148,41 @@ export default function ModalNuevoPago({
 
     setGuardando(true);
     try {
-      const pago = {
+      const pago: any = {
         numero: generarNumeroPago(),
         tenantId: user.tenantId,
         pacienteId,
         pacienteNombre,
         fecha: new Date().toISOString(),
         concepto: concepto.trim(),
-        presupuestoId: presupuestoId || undefined,
-        presupuestoNumero: presupuestoSel?.numero,
         montoBruto: bruto,
         descuento: descuentoMonto,
         descuentoTipo,
         descuentoValor: descVal,
         montoNeto,
         metodoPago,
-        nota: nota.trim() || undefined,
         estado: "Activo" as const,
-        doctorId: doctorId || undefined,
-        doctorNombre: doctorSel?.nombre,
         creadoPor: user.nombre || user.email || "Sistema",
         creadoEn: new Date().toISOString(),
       };
+
+      if (presupuestoId) {
+        pago.presupuestoId = presupuestoId;
+        if (presupuestoSel?.numero) {
+          pago.presupuestoNumero = presupuestoSel.numero;
+        }
+      }
+
+      if (nota.trim()) {
+        pago.nota = nota.trim();
+      }
+
+      if (doctorId) {
+        pago.doctorId = doctorId;
+        if (doctorSel?.nombre) {
+          pago.doctorNombre = doctorSel.nombre;
+        }
+      }
 
       await registrarPago(pago);
 
