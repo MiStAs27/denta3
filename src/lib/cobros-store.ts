@@ -115,6 +115,7 @@ export async function actualizarEstadoPresupuesto(
 ): Promise<void> {
   const ref = doc(db, "pacientes", pacienteId, "presupuestos", presupuestoId);
   await updateDoc(ref, { estado });
+  await recalcularSaldoPaciente(pacienteId);
 }
 export async function obtenerPresupuestosPaciente(
   pacienteId: string
@@ -145,7 +146,12 @@ export async function obtenerCargosPaciente(
   );
   presSnap.docs.forEach((d) => {
     const data = d.data();
-    if (esPresupuestoPlan(data)) return;
+    // Si es un plan de tratamiento, solo se convierte en cargo de la cuenta si está Aceptado
+    if (esPresupuestoPlan(data) && data.estado !== "Aceptado") return;
+
+    // Evitar duplicados si por algún motivo ya existe un cargo en la subcolección de cargos enlazado a este presupuesto
+    if (cargos.some((c) => c.presupuestoId === d.id)) return;
+
     const monto = (data.total as number) ?? (data.costoTotal as number) ?? 0;
     if (monto <= 0) return;
     cargos.push({
@@ -156,13 +162,20 @@ export async function obtenerCargosPaciente(
       pacienteNombre: (data.pacienteNombre as string) || "",
       fecha: (data.fecha as string) || new Date().toISOString(),
       concepto:
-        (data.tratamiento as string) ||
-        (data.items as { nombre: string }[])?.map((i) => i.nombre).join(", ") ||
-        "Tratamiento",
+        data.numero
+          ? `Aceptación de presupuesto ${data.numero}` +
+            ((data.items as { nombre: string }[])?.length
+              ? `: ${(data.items as { nombre: string }[]).map((i) => i.nombre).join(", ")}`
+              : "")
+          : (data.tratamiento as string) ||
+            (data.items as { nombre: string }[])?.map((i) => i.nombre).join(", ") ||
+            "Tratamiento",
       monto,
       estado: "Activo",
       creadoPor: (data.creadoPor as string) || "Sistema",
       creadoEn: (data.creadoEn as string) || (data.fecha as string),
+      presupuestoId: d.id,
+      presupuestoNumero: data.numero as string,
     });
   });
 

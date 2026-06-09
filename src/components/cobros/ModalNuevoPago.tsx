@@ -213,7 +213,7 @@ export default function ModalNuevoPago({
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#2651A3] flex items-center gap-2">
             <Wallet className="w-5 h-5" />
-            Registrar Pago (Presencial)
+            Registrar Pago
           </DialogTitle>
           <p className="text-sm text-slate-500">
             Paciente:{" "}
@@ -223,13 +223,13 @@ export default function ModalNuevoPago({
 
         <div className="space-y-4 py-2">
           <div>
-            <Label>Presupuesto (opcional)</Label>
+            <Label>Presupuesto:</Label>
             <select
               value={presupuestoId}
               onChange={(e) => handlePresupuestoChange(e.target.value)}
               className="mt-1 flex h-10 w-full rounded-md border px-3 text-sm"
             >
-              <option value="">Pago libre</option>
+              <option value="">Seleccionar presupuesto</option>
               {presupuestos.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.numero} — Saldo: Bs.{" "}
@@ -258,7 +258,7 @@ export default function ModalNuevoPago({
           )}
 
           <div>
-            <Label>Concepto</Label>
+            <Label>Concepto:</Label>
             <Input
               value={concepto}
               onChange={(e) => setConcepto(e.target.value)}
@@ -268,7 +268,7 @@ export default function ModalNuevoPago({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Monto bruto (Bs.)</Label>
+              <Label>Monto (Bs.)</Label>
               <Input
                 type="number"
                 min={0}
@@ -279,7 +279,7 @@ export default function ModalNuevoPago({
               />
             </div>
             <div>
-              <Label>Método (presencial)</Label>
+              <Label>Método de pago:</Label>
               <select
                 value={metodoPago}
                 onChange={(e) => setMetodoPago(e.target.value as MetodoPago)}
@@ -293,7 +293,7 @@ export default function ModalNuevoPago({
           </div>
 
           <div>
-            <Label>Descuento</Label>
+            <Label>Descuento:</Label>
             <div className="flex gap-2 mt-1">
               <select
                 value={descuentoTipo}
