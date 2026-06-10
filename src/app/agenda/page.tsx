@@ -28,7 +28,6 @@ interface CitaUI extends Omit<Cita, "id"> {
   fechaReprogramada?: string;
 }
 
-
 export default function AgendaPage() {
   const { user } = useAuth(); // 🔥 Extraemos el usuario actual
 
@@ -58,7 +57,7 @@ export default function AgendaPage() {
       const qEspecialistas = query(
         collection(db, "usuarios"),
         where("tenantId", "==", user.tenantId),
-        where("rol", "==", "ESPECIALISTA")
+        where("rol", "==", "ESPECIALISTA"),
       );
       const snapEspecialistas = await getDocs(qEspecialistas);
       const mapaDoctores: Record<string, string> = {};
@@ -78,14 +77,24 @@ export default function AgendaPage() {
       const snapshot = await getDocs(q);
 
       let citas: CitaUI[] = [];
+
       snapshot.forEach((doc) => {
         const data = doc.data() as CitaUI;
+
+        // 1. Normalización de Estado
         if (data.estado === "programada") data.estado = "pendiente";
 
-        citas.push({ 
-          ...data, 
-          id: doc.id, 
-          especialistaNombre: mapaDoctores[data.especialistaId] || 'Especialista Desconocido' 
+        // --- INICIO DEL INTERCEPTOR PARA EL CHATBOT ---
+        // 2. Sanitización de Fecha (Limpia espacios vacíos o la 'T' del formato ISO)
+        const fechaLimpia = data.fecha ? data.fecha.split("T")[0].trim() : "";
+        // --- FIN DEL INTERCEPTOR ---
+
+        citas.push({
+          ...data,
+          id: doc.id,
+          fecha: fechaLimpia, // Reemplazamos la fecha cruda por la fecha limpia
+          especialistaNombre:
+            mapaDoctores[data.especialistaId] || "Especialista Desconocido",
         });
       });
 
