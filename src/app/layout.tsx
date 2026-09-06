@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import MainLayout from '@/components/layout/MainLayout'; // <-- Importamos el nuevo envoltorio
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'DentaSync',
@@ -29,6 +30,7 @@ export default function RootLayout({
         </MainLayout>
 
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
